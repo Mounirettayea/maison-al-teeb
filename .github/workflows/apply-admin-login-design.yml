@@ -1,0 +1,181 @@
+name: Apply admin login design
+
+on:
+  push:
+    paths:
+      - 'admin.html'
+      - '.github/workflows/apply-admin-login-design.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply new login design
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('admin.html')
+          text = p.read_text(encoding='utf-8')
+
+          css = r'''
+          /* Modern admin login design */
+          body.login-mode{
+            min-height:100vh;
+            background:linear-gradient(180deg,#2c1b4a 0%,#6b3d6e 45%,#d98fa0 100%);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-family:'Poppins',Arial,Tahoma,sans-serif;
+            padding:40px 20px;
+            position:relative;
+            overflow:hidden;
+          }
+          body.login-mode .wrap{width:100%;max-width:none;margin:0;padding:0;}
+          body.login-mode #loginCard{
+            position:relative;
+            display:block;
+            width:400px;
+            max-width:100%;
+            min-height:0;
+            margin:0 auto;
+            padding:0;
+            overflow:hidden;
+            border:none;
+            border-radius:16px;
+            background:#f2eef3;
+            color:#2b1a45;
+            box-shadow:0 40px 70px -20px rgba(20,8,35,.6);
+          }
+          body.login-mode #loginCard .login-art{width:100%;height:280px;display:block;}
+          body.login-mode #loginCard .login-content{display:block;padding:32px 36px 36px;background:#f2eef3;}
+          body.login-mode #loginCard .login-content-inner{width:100%;max-width:none;}
+          body.login-mode #loginCard .login-content h2{text-align:left;color:#2b1a45;font-size:26px;font-weight:700;margin:0 0 22px;}
+          body.login-mode #loginCard .login-subtitle{display:none;}
+          body.login-mode #loginCard .login-field{position:relative;margin-bottom:16px;}
+          body.login-mode #loginCard .login-field label{display:none;}
+          body.login-mode #loginCard .login-input{
+            width:100%;height:auto;padding:14px 20px 14px 46px;
+            border:none;border-radius:24px;
+            background:linear-gradient(135deg,#e08fa0,#f0b6a8);
+            color:#fff;font-family:'Poppins',Arial,sans-serif;font-size:14px;font-weight:500;
+            outline:none;direction:ltr;box-shadow:none;
+          }
+          body.login-mode #loginCard .login-input::placeholder{color:rgba(255,255,255,.85);}
+          body.login-mode #loginCard .login-input:focus{border:none;box-shadow:0 0 0 3px rgba(122,74,138,.15);}
+          body.login-mode #loginCard .login-field::before{content:'';position:absolute;left:18px;top:50%;transform:translateY(-50%);width:16px;height:16px;z-index:2;opacity:.9;background-repeat:no-repeat;background-position:center;background-size:16px 16px;pointer-events:none;}
+          body.login-mode #loginCard .login-field:first-child::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 20c0-4 4-6 8-6s8 2 8 6'/%3E%3C/svg%3E");}
+          body.login-mode #loginCard .login-field:nth-child(2)::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Crect x='5' y='11' width='14' height='9' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E");}
+          body.login-mode #loginCard .login-options{display:flex;align-items:center;justify-content:space-between;margin:18px 0 24px;font-size:12.5px;color:#2b1a45;}
+          body.login-mode #loginCard .login-remember{display:flex;align-items:center;gap:8px;color:#2b1a45;}
+          body.login-mode #loginCard .login-remember input{accent-color:#3a2158;width:16px;height:16px;}
+          body.login-mode #loginCard .login-forgot{color:#2b1a45;text-decoration:none;}
+          body.login-mode #loginCard .login-button{width:100%;height:auto;padding:14px;border:none;border-radius:24px;background:#7a4a8a;color:#fff;font-family:'Poppins',Arial,sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:background .2s ease,transform .15s ease;box-shadow:none;}
+          body.login-mode #loginCard .login-button:hover{background:#663d76;transform:translateY(-1px);}
+          body.login-mode #loginCard .login-security{display:none;}
+          body.login-mode #loginCard .login-footer{display:block;text-align:center;margin-top:16px;font-size:12.5px;color:#2b1a45;font-family:'Poppins',Arial,sans-serif;letter-spacing:0;}
+          body.login-mode #loginCard #loginMsg{color:#7a4a8a;margin-top:10px;min-height:20px;text-align:center;}
+          body.login-mode .home-site-btn{top:18px;right:18px;background:rgba(20,10,30,.55);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);}
+          @media(max-width:520px){body.login-mode{padding:25px 16px;}body.login-mode #loginCard .login-content{padding:28px 26px 30px;}body.login-mode #loginCard .login-art{height:250px;}}
+          '''
+
+          text = text.replace('</head>', '<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">\n<style>\n' + css + '\n</style>\n</head>', 1)
+
+          new_login = r'''<div id="loginCard">
+            <svg class="login-art" viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg" aria-label="Login artwork">
+              <defs>
+                <linearGradient id="loginSky" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3a2158"/>
+                  <stop offset="55%" stop-color="#8a4a7c"/>
+                  <stop offset="100%" stop-color="#e6a0a8"/>
+                </linearGradient>
+                <linearGradient id="loginMoon" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#f6c9a8"/>
+                  <stop offset="100%" stop-color="#e08f8a"/>
+                </linearGradient>
+                <linearGradient id="loginDuneBack" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#5a3168"/>
+                  <stop offset="100%" stop-color="#3a2158"/>
+                </linearGradient>
+                <linearGradient id="loginDuneFront1" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#f0b6a8"/>
+                  <stop offset="100%" stop-color="#c96f7e"/>
+                </linearGradient>
+                <linearGradient id="loginDuneFront2" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#3a2158"/>
+                  <stop offset="100%" stop-color="#4d2a63"/>
+                </linearGradient>
+              </defs>
+              <rect width="400" height="280" fill="url(#loginSky)"/>
+              <circle cx="30" cy="30" r="1.5" fill="#fff" opacity=".8"/>
+              <circle cx="70" cy="60" r="1" fill="#fff" opacity=".6"/>
+              <circle cx="340" cy="40" r="1.5" fill="#fff" opacity=".7"/>
+              <circle cx="300" cy="90" r="1" fill="#fff" opacity=".5"/>
+              <circle cx="120" cy="25" r="1" fill="#fff" opacity=".6"/>
+              <circle cx="360" cy="110" r="1" fill="#fff" opacity=".5"/>
+              <line x1="60" y1="80" x2="110" y2="55" stroke="#fff" stroke-width="1.5" opacity=".6"/>
+              <line x1="290" y1="130" x2="330" y2="110" stroke="#fff" stroke-width="1.5" opacity=".5"/>
+              <circle cx="270" cy="70" r="26" fill="url(#loginMoon)"/>
+              <path d="M0,180 L60,120 L130,170 L200,110 L260,160 L330,115 L400,175 L400,280 L0,280 Z" fill="url(#loginDuneBack)"/>
+              <path d="M0,220 L90,150 L170,210 L230,140 L400,215 L400,280 L0,280 Z" fill="url(#loginDuneFront1)"/>
+              <path d="M0,250 L120,190 L250,245 L400,200 L400,280 L0,280 Z" fill="url(#loginDuneFront2)"/>
+            </svg>
+
+            <div class="login-content">
+              <div class="login-content-inner">
+                <h2>Login</h2>
+                <form id="loginForm">
+                  <div class="login-field">
+                    <label for="email">البريد الإلكتروني</label>
+                    <input id="email" class="login-input" type="email" placeholder="Username" autocomplete="username" required>
+                  </div>
+                  <div class="login-field">
+                    <label for="password">كلمة المرور</label>
+                    <input id="password" class="login-input" type="password" placeholder="Password" autocomplete="current-password" required>
+                  </div>
+                  <div class="login-options">
+                    <label class="login-remember"><input type="checkbox" checked> <span>remember me</span></label>
+                    <a href="#" class="login-forgot" id="forgotPassword">forgot password</a>
+                  </div>
+                  <button class="login-button" id="loginButton" type="submit">Login</button>
+                  <div id="loginMsg"></div>
+                </form>
+                <div class="login-footer">MAISON AL TEEB • ADMIN</div>
+              </div>
+            </div>
+          </div>'''
+
+          pattern = r'<div id="loginCard">.*?</div>\s*\n\s*<div id="adminPanel"'
+          replacement = new_login + '\n\n  <div id="adminPanel"'
+          text2, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Could not locate loginCard/adminPanel block')
+
+          p.write_text(text2, encoding='utf-8')
+          print('Admin login design applied.')
+          PY
+
+      - name: Remove duplicate workflow files
+        run: |
+          rm -f .github/workflows/fix-admin-duplicate.yml
+          rm -f .github/workflows/apply-admin-login-design.yml
+
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add admin.html .github/workflows/fix-admin-duplicate.yml .github/workflows/apply-admin-login-design.yml
+          if git diff --cached --quiet; then
+            echo 'No changes needed.'
+            exit 0
+          fi
+          git commit -m 'Redesign admin login page [skip ci]'
+          git push
