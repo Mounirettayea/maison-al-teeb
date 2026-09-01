@@ -44,6 +44,28 @@
     table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #eee;text-align:right}
     img.thumb{width:65px;height:65px;object-fit:cover;border-radius:8px}
     @media(max-width:700px){.grid{grid-template-columns:1fr}.full{grid-column:auto}table{font-size:13px}}
+
+/* Mobile admin login: brand/logo first, form second */
+@media(max-width:700px){
+  body.login-mode{overflow-x:hidden;overflow-y:auto;padding:14px 10px;}
+  #loginCard{width:100%;min-height:0;margin:0 auto;display:flex;flex-direction:column;border-radius:20px;}
+  #loginCard .login-brand{order:1;min-height:270px;padding:28px 20px 24px;border-left:0;border-bottom:1px solid rgba(212,168,76,.25);}
+  #loginCard .login-brand:before{inset:14px;border-radius:16px;}
+  #loginCard .login-brand img{width:150px;max-width:65%;height:auto;margin-bottom:12px;}
+  #loginCard .login-brand h1{font-size:23px;letter-spacing:2px;}
+  #loginCard .login-brand p{font-size:12px;line-height:1.7;margin-top:10px;}
+  #loginCard .login-content{order:2;padding:30px 22px 28px;}
+  #loginCard .login-content-inner{max-width:100%;}
+  #loginCard .login-input{display:block;width:100%;}
+}
+@media(max-width:390px){
+  body.login-mode{padding:8px 6px;}
+  #loginCard .login-brand{min-height:245px;padding:24px 15px 20px;}
+  #loginCard .login-brand img{width:135px;}
+  #loginCard .login-brand h1{font-size:21px;}
+  #loginCard .login-content{padding:26px 16px 24px;}
+}
+
   </style>
 </head>
 <body class="login-mode">
@@ -1468,8 +1490,8 @@ async function boot(){
   // The authenticated session exists only for this page load.
   showLogin();
 }
-function showLogin(){$('loginCard').classList.remove('hidden');$('adminPanel').classList.add('hidden')}
-async function showAdmin(){$('loginCard').classList.add('hidden');$('adminPanel').classList.remove('hidden');await load()}
+function showLogin(){$('loginCard').classList.remove('hidden');$('loginCard').style.display='grid';$('adminPanel').classList.add('hidden');$('adminPanel').style.display='none';window.scrollTo({top:0,left:0,behavior:'auto'})}
+async function showAdmin(){$('loginCard').classList.add('hidden');$('loginCard').style.display='none';$('adminPanel').classList.remove('hidden');$('adminPanel').style.display='block';window.scrollTo({top:0,left:0,behavior:'auto'});await load()}
 async function logout(){await db.auth.signOut();showLogin()}
 $('loginForm').addEventListener('submit',async e=>{
   e.preventDefault(); loginMsg('جاري الدخول...');
