@@ -2,10 +2,8 @@ name: Fix admin product update
 on:
   push:
     branches: [main]
-
 permissions:
   contents: write
-
 jobs:
   fix:
     runs-on: ubuntu-latest
@@ -17,32 +15,10 @@ jobs:
           from pathlib import Path
           p=Path('admin.html')
           text=p.read_text(encoding='utf-8')
-          old="""  if(id){
-    // Update an existing Supabase row first.
-    result = await db.from('products').update(payload).eq('id',id);
-    if(!result.error && (!result.data || result.data.length === 0)){
-      // The product may only exist in the site's built-in catalog.
-      // Create the same ID in Supabase so future changes sync to the public site.
-      result = await db.from('products').insert({...payload,id});
-    }
-  } else {
-    result = await db.from('products').insert(payload);
-  }"""
-          new="""  if(id){
-    // Update the existing row and return its id. Supabase updates do not return
-    // rows unless select() is requested; without it the old code incorrectly
-    // treated a successful update as missing and tried to insert the same ID.
-    result = await db.from('products').update(payload).eq('id',id).select('id').maybeSingle();
-    if(!result.error && !result.data){
-      // Product exists only in the built-in catalog: create it once with this ID.
-      result = await db.from('products').insert({...payload,id});
-    }
-  } else {
-    result = await db.from('products').insert(payload);
-  }"""
-          if old not in text:
-              raise SystemExit('target update block not found')
-          text=text.replace(old,new,1)
+          start=text.index("  if(id){\n    // Update an existing Supabase row first.")
+          end=text.index("  } else {\n    result = await db.from('products').insert(payload);\n  }", start)+len("  } else {\n    result = await db.from('products').insert(payload);\n  }")
+          new="  if(id){\n    // Update the existing row and return its id.\n    result = await db.from('products').update(payload).eq('id',id).select('id').maybeSingle();\n    if(!result.error && !result.data){\n      // Product exists only in the built-in catalog: create it once with this ID.\n      result = await db.from('products').insert({...payload,id});\n    }\n  } else {\n    result = await db.from('products').insert(payload);\n  }"
+          text=text[:start]+new+text[end:]
           p.write_text(text,encoding='utf-8')
           PY
       - name: Remove one-time workflow
