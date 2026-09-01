@@ -1589,11 +1589,10 @@ $('productForm').addEventListener('submit',async e=>{
 
   let result;
   if(id){
-    // Update an existing Supabase row first.
-    result = await db.from('products').update(payload).eq('id',id);
-    if(!result.error && (!result.data || result.data.length === 0)){
-      // The product may only exist in the site's built-in catalog.
-      // Create the same ID in Supabase so future changes sync to the public site.
+    // Update the existing row and return its id.
+    result = await db.from('products').update(payload).eq('id',id).select('id').maybeSingle();
+    if(!result.error && !result.data){
+      // Product exists only in the built-in catalog: create it once with this ID.
       result = await db.from('products').insert({...payload,id});
     }
   } else {
