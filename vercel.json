@@ -1,3 +1,10 @@
 {
-  "cleanUrls": false
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/caissiere.html", "destination": "/caissiere.html" },
+    { "source": "/scanner.html", "destination": "/scanner.html" },
+    { "source": "/admin.html", "destination": "/admin.html" },
+    { "source": "/stock.html", "destination": "/stock.html" },
+    { "source": "/gestion-stock.html", "destination": "/gestion-stock.html" }
+  ]
 }
