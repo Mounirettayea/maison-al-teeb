@@ -32,10 +32,27 @@ window.MAISON_SUPABASE = {
   }
 })();
 
+// Admin must always ask for email + password again.
+// Supabase stores the session in localStorage under sb-<project-ref>-auth-token.
+(function () {
+  const path = location.pathname + location.search + location.hash;
+  const isAdmin = /\/admin(?:\.html)?(?:$|[?#])/.test(path);
+  if (!isAdmin) return;
+
+  try {
+    const projectRef = new URL(window.MAISON_SUPABASE.url).hostname.split('.')[0];
+    const authKey = `sb-${projectRef}-auth-token`;
+    localStorage.removeItem(authKey);
+    sessionStorage.removeItem(authKey);
+  } catch (e) {
+    console.warn('Unable to clear previous admin session', e);
+  }
+})();
+
 // MAISON AL TEEB — Admin barcode scanner
 // Loaded from the shared config so the existing admin.html does not need to be rewritten.
 (function () {
-  if (!/\/admin(?:\.html)?(?:$|[?#])/.test(location.pathname + location.search + location.hash)) return;
+  if(!/\/admin(?:\.html)?(?:$|[?#])/.test(location.pathname + location.search + location.hash)) return;
 
   const scannerCss = `
     #matBarcodeScannerOverlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99999;display:none;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(8px)}
