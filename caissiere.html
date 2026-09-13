@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Maison Al Teeb — Caisse</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/supabase-config.js"></script>
+<style>
+body{margin:0;min-height:100vh;background:#f7f4ee;color:#1d2821;font-family:Arial,Tajawal,sans-serif;display:grid;place-items:center;padding:20px;box-sizing:border-box}.box{width:min(430px,100%);background:#fff;border:1px solid #e7e0d2;border-radius:20px;padding:28px;box-shadow:0 15px 50px #0001}.brand{color:#d4af37;font:700 23px Georgia,serif}.gold{color:#b68d20}h1{font-size:25px;margin:20px 0 6px}.sub{color:#68716b;font-size:13px}label{display:block;margin:18px 0 6px;font-weight:700;font-size:13px}input{width:100%;box-sizing:border-box;border:1px solid #d9d2c5;border-radius:10px;padding:13px;font:inherit}button{width:100%;margin-top:14px;border:0;border-radius:10px;padding:13px;background:#0e291b;color:#fff;font:inherit;font-weight:700;cursor:pointer}.msg{margin-top:12px;font-size:13px;color:#8e2c2c}.ok{color:#24603e}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="brand">MAISON AL TEEB</div>
+  <h1>دخول الكاشيير</h1>
+  <div class="sub">هذا الدخول مخصص فقط لحساب caisse.</div>
+  <label>Email</label>
+  <input id="email" type="email" value="caissiere@maisonalteeb.ma" readonly>
+  <label>Mot de passe</label>
+  <input id="password" type="password" autocomplete="current-password" placeholder="دخل كلمة السر">
+  <button id="btn" onclick="login()">دخول إلى Scanner</button>
+  <div id="msg" class="msg"></div>
+</div>
+<script>
+const ALLOWED='caissiere@maisonalteeb.ma';
+const cfg=window.MAISON_SUPABASE||{};
+const sb=supabase.createClient(cfg.url||'https://mbjgirwuqzcjrllnokzj.supabase.co',cfg.anonKey||'');
+async function login(){
+  const email=document.getElementById('email').value.trim().toLowerCase();
+  const password=document.getElementById('password').value;
+  const msg=document.getElementById('msg');
+  const btn=document.getElementById('btn');
+  if(email!==ALLOWED){msg.textContent='هذا الحساب غير مسموح له.';return}
+  if(!password){msg.textContent='دخل كلمة السر.';return}
+  btn.disabled=true;btn.textContent='جاري الدخول...';msg.textContent='';
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){msg.textContent='تعذر الدخول: كلمة السر غير صحيحة أو الحساب غير متاح.';btn.disabled=false;btn.textContent='دخول إلى Scanner';return}
+  if(data.user?.email?.toLowerCase()!==ALLOWED){await sb.auth.signOut();msg.textContent='هذا الحساب غير مسموح له بالدخول إلى caisse.';btn.disabled=false;btn.textContent='دخول إلى Scanner';return}
+  msg.className='msg ok';msg.textContent='تم الدخول بنجاح...';
+  location.href='/scanner.html';
+}
+document.getElementById('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+</script>
+</body>
+</html>
