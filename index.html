@@ -976,6 +976,38 @@
           }
         }
 
+        @media (max-width: 768px) {
+          .nav-links.mobile-nav-open {
+            display: flex !important;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            left: 0;
+            flex-direction: column;
+            gap: 0;
+            background: var(--bg-cream);
+            border-bottom: 1px solid var(--gold-primary);
+            box-shadow: 0 12px 30px rgba(0,0,0,.12);
+            padding: 8px 14px 14px;
+            z-index: 1100;
+          }
+          .nav-links.mobile-nav-open li {
+            width: 100%;
+            list-style: none;
+          }
+          .nav-links.mobile-nav-open a {
+            display: block;
+            width: 100%;
+            padding: 12px 8px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--green-deep);
+            text-decoration: none;
+          }
+          .nav-links.mobile-nav-open li:last-child a {
+            border-bottom: 0;
+          }
+        }
+
         @media (max-width: 390px) {
           .header-container { padding-inline: 8px; }
           .logo { font-size: 1.12rem; max-width: 122px; }
@@ -3325,5 +3357,23 @@ Object.keys(TRANSLATIONS.fr).forEach(k => {
           }
         }
       </script>
+    <script>
+      // Mobile navigation: the menu button was present but had no function.
+      function toggleMobileNav() {
+        const nav = document.querySelector('.nav-links');
+        if (!nav) return;
+        nav.classList.toggle('mobile-nav-open');
+      }
+
+      // Close the mobile menu after choosing a navigation item.
+      document.addEventListener('click', function (event) {
+        const nav = document.querySelector('.nav-links');
+        const button = document.querySelector('.mobile-menu-btn');
+        if (!nav || !button || !nav.classList.contains('mobile-nav-open')) return;
+        if (!nav.contains(event.target) && !button.contains(event.target)) {
+          nav.classList.remove('mobile-nav-open');
+        }
+      });
+    </script>
     </body>
 </html>
