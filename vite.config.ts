@@ -10,6 +10,10 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         admin: resolve(__dirname, 'admin.html'),
+        caissiere: resolve(__dirname, 'caissiere.html'),
+        scanner: resolve(__dirname, 'scanner.html'),
+        stock: resolve(__dirname, 'stock.html'),
+        gestionStock: resolve(__dirname, 'gestion-stock.html'),
         resetPassword: resolve(__dirname, 'reset-password.html'),
       },
     },
