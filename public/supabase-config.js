@@ -6,6 +6,32 @@ window.MAISON_SUPABASE = {
   anonKey: "sb_publishable_gEivTgSBsntxUkkJc3h9AA_-cmDpszh"
 };
 
+// Always start the storefront login fresh.
+// This clears any previous Supabase Auth session when the visitor opens index.html,
+// so an old account is never silently reused on the login screen.
+(function () {
+  const path = location.pathname.replace(/\/$/, '') || '/';
+  const isStorefront = path === '/' || path === '/index.html';
+  if (!isStorefront || !window.supabase || !window.MAISON_SUPABASE?.url || !window.MAISON_SUPABASE?.anonKey) return;
+
+  try {
+    const client = window.supabase.createClient(
+      window.MAISON_SUPABASE.url,
+      window.MAISON_SUPABASE.anonKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
+      }
+    );
+    client.auth.signOut({ scope: 'local' }).catch(() => {});
+  } catch (e) {
+    console.warn('Unable to clear previous storefront session', e);
+  }
+})();
+
 // MAISON AL TEEB — Admin barcode scanner
 // Loaded from the shared config so the existing admin.html does not need to be rewritten.
 (function () {
