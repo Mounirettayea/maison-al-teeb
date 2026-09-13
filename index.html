@@ -96,11 +96,13 @@
 
         .header-container {
           max-width: 1300px;
+          width: 100%;
           margin: 0 auto;
           padding: 15px 25px;
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 18px;
         }
 
         .logo {
@@ -113,6 +115,9 @@
           display: flex;
           align-items: center;
           gap: 8px;
+          flex: 0 1 auto;
+          min-width: 0;
+          white-space: nowrap;
         }
 
         .logo span {
@@ -161,18 +166,22 @@
         .header-actions {
           display: flex;
           align-items: center;
-          gap: 18px;
+          justify-content: flex-start;
+          gap: 12px;
+          flex: 0 0 auto;
+          min-width: 0;
         }
 
         .lang-select {
           background: transparent;
           border: 1px solid var(--border-color);
-          padding: 4px 8px;
+          padding: 5px 8px;
           border-radius: 4px;
           color: var(--green-deep);
           font-weight: bold;
           cursor: pointer;
           outline: none;
+          min-width: 0;
         }
 
         .action-icon {
@@ -182,6 +191,13 @@
           cursor: pointer;
           position: relative;
           transition: var(--transition);
+          width: 32px;
+          height: 32px;
+          padding: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex: 0 0 32px;
         }
 
         .action-icon:hover {
@@ -210,6 +226,12 @@
           border: none;
           color: var(--green-deep);
           cursor: pointer;
+          width: 34px;
+          height: 34px;
+          padding: 0;
+          align-items: center;
+          justify-content: center;
+          flex: 0 0 34px;
         }
 
         /* Hero Section */
@@ -912,12 +934,55 @@
           .nav-links {
             display: none;
           } /* Mobile Menu Toggle */
+          .header-container {
+            padding: 10px 12px;
+            gap: 8px;
+          }
+          .logo {
+            font-size: 1.28rem;
+            letter-spacing: .5px;
+            flex: 0 0 auto;
+            max-width: 145px;
+            overflow: hidden;
+            text-overflow: clip;
+          }
+          .header-actions {
+            gap: 7px;
+            margin-left: auto;
+          }
+          .lang-select {
+            width: 92px;
+            font-size: .78rem;
+            padding: 5px 6px;
+          }
+          .action-icon {
+            width: 30px;
+            height: 30px;
+            flex-basis: 30px;
+          }
+          .action-icon svg {
+            width: 19px;
+            height: 19px;
+          }
           .mobile-menu-btn {
-            display: block;
+            display: inline-flex;
+          }
+          .mobile-menu-btn svg {
+            width: 22px;
+            height: 22px;
           }
           .product-detail-grid {
             grid-template-columns: 1fr;
           }
+        }
+
+        @media (max-width: 390px) {
+          .header-container { padding-inline: 8px; }
+          .logo { font-size: 1.12rem; max-width: 122px; }
+          .header-actions { gap: 4px; }
+          .lang-select { width: 82px; font-size: .72rem; }
+          .action-icon { width: 27px; height: 27px; flex-basis: 27px; }
+          .mobile-menu-btn { width: 30px; height: 30px; flex-basis: 30px; }
         }
 
         @media (max-width: 480px) {
