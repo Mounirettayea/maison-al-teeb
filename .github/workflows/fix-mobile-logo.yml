@@ -1,0 +1,71 @@
+name: Fix mobile logo visibility
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message, '[mobile-logo-fixed]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix mobile header logo
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = '''          .logo {
+            font-size: 1.28rem;
+            letter-spacing: .5px;
+            flex: 0 0 auto;
+            max-width: 145px;
+            overflow: hidden;
+            text-overflow: clip;
+          }'''
+          new = '''          .logo {
+            font-size: 1.08rem;
+            letter-spacing: .25px;
+            flex: 1 1 auto;
+            min-width: 0;
+            max-width: none;
+            overflow: visible;
+            text-overflow: clip;
+            white-space: nowrap;
+          }'''
+          if old not in s:
+              raise SystemExit('mobile logo block not found')
+          s = s.replace(old, new, 1)
+          old2 = '''        @media (max-width: 390px) {
+          .header-container { padding-inline: 8px; }
+          .logo { font-size: 1.12rem; max-width: 122px; }
+          .header-actions { gap: 4px; }
+          .lang-select { width: 82px; font-size: .72rem; }
+          .action-icon { width: 27px; height: 27px; flex-basis: 27px; }
+          .mobile-menu-btn { width: 30px; height: 30px; flex-basis: 30px; }
+        }'''
+          new2 = '''        @media (max-width: 390px) {
+          .header-container { padding-inline: 8px; gap: 5px; }
+          .logo { font-size: .98rem; max-width: none; flex: 1 1 auto; white-space: nowrap; }
+          .header-actions { gap: 3px; margin-left: 0; }
+          .lang-select { width: 32px; min-width: 32px; height: 30px; }
+          .action-icon { width: 27px; height: 27px; flex-basis: 27px; }
+          .mobile-menu-btn { width: 30px; height: 30px; flex-basis: 30px; }
+        }'''
+          if old2 not in s:
+              raise SystemExit('390px logo block not found')
+          s = s.replace(old2, new2, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit fix and remove temporary workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git rm .github/workflows/fix-mobile-logo.yml
+          git commit -m 'Fix mobile Maison Al Teeb logo visibility [mobile-logo-fixed]'
+          git push
