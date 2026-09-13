@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Maison Al Teeb — Scanner</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/html5-qrcode" defer></script>
+<script src="/supabase-config.js"></script>
+<style>
+:root{--g:#0e291b;--gl:#153c28;--gold:#d4af37;--bg:#f7f4ee;--card:#fff;--muted:#68716b;--line:#e7e0d2;--red:#a93232}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#1d2821;font-family:Tajawal,Arial,sans-serif}.top{background:var(--g);color:#fff;padding:15px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px}.brand{font-family:Georgia,serif;color:var(--gold);font-size:20px;font-weight:700}.top a{color:#fff;text-decoration:none;border:1px solid #ffffff33;padding:8px 10px;border-radius:9px}.wrap{max-width:900px;margin:auto;padding:16px}.hero{margin-bottom:14px}.hero h1{margin:0 0 4px;font-size:25px}.sub{color:var(--muted)}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px;box-shadow:0 7px 25px #0e291b0a}.scanbox{max-width:520px;margin:auto}.reader{width:100%;overflow:hidden;border-radius:14px;background:#111;min-height:280px}.reader video{border-radius:14px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.btn{border:0;border-radius:10px;padding:11px 14px;font:inherit;cursor:pointer}.primary{background:var(--g);color:#fff}.secondary{background:#eee9df;color:#1d2821}.inputrow{display:flex;gap:8px}.inputrow input{flex:1}input{border:1px solid #d9d2c5;border-radius:10px;padding:11px 13px;font:inherit;background:#fff;min-width:0}.msg{display:none;padding:10px 12px;border-radius:10px;margin-top:10px}.ok{display:block;background:#e8f5ed;color:#24603e}.err{display:block;background:#fbeaea;color:#8e2c2c}.cart-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.cart-head h2{font-size:19px;margin:0}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:10px 5px;border-bottom:1px solid #eee;text-align:right;vertical-align:middle}.table th{font-size:12px;color:var(--muted)}.prod{display:flex;align-items:center;gap:9px}.prod img{width:45px;height:45px;border-radius:8px;object-fit:cover;background:#eee}.qty{display:inline-flex;align-items:center;gap:6px}.qty button{width:29px;height:29px;border:1px solid #ddd;background:#f8f7f4;border-radius:7px;cursor:pointer;font-weight:700}.qty b{min-width:22px;text-align:center}.total{display:flex;justify-content:space-between;font-size:21px;font-weight:800;padding-top:13px}.total strong{color:var(--g)}.empty{text-align:center;color:var(--muted);padding:22px 8px}.small{font-size:12px}.hidden{display:none!important}@media(max-width:600px){.wrap{padding:12px}.hero h1{font-size:22px}.table{font-size:13px}.table th:nth-child(2),.table td:nth-child(2){text-align:center}.table th:nth-child(4),.table td:nth-child(4){text-align:left}.top{padding:13px}.reader{min-height:250px}}
+</style></head>
+<body>
+<header class="top"><div class="brand">MAISON AL TEEB</div><a href="/">المتجر</a></header>
+<main class="wrap">
+<section class="hero"><h1>📷 Scanner & Commande</h1><div class="sub">سكان الباركود، وسيتم جمع المنتجات تلقائياً في الطلب.</div></section>
+<section class="card scanbox">
+<div id="reader" class="reader"></div>
+<div class="actions"><button id="start" class="btn primary" onclick="startScanner()">تشغيل الكاميرا</button><button class="btn secondary" onclick="stopScanner()">إيقاف</button></div>
+<div class="inputrow" style="margin-top:10px"><input id="manual" placeholder="أو أدخل الباركود يدوياً" inputmode="numeric" autocomplete="off"><button class="btn primary" onclick="lookup(manual.value)">إضافة</button></div>
+<div id="msg" class="msg"></div>
+</section>
+<section class="card"><div class="cart-head"><h2>🛒 الطلب</h2><button class="btn secondary" onclick="clearCart()">مسح الكل</button></div><div id="cart"></div><div class="total"><span>المجموع</span><strong id="grand">0.00 DH</strong></div><div class="actions"><button class="btn primary" style="flex:1" onclick="validateOrder()">Valider la commande</button><button class="btn secondary" onclick="window.print()">طباعة</button></div></section>
+</main>
+<script>
+const CONFIG=window.MAISON_SUPABASE||{};
+const sb=supabase.createClient(CONFIG.url||'https://mbjgirwuqzcjrllnokzj.supabase.co',CONFIG.anonKey||'');
+let scanner=null,cartItems=[];
+function message(t,error=false){const el=document.getElementById('msg');el.textContent=t;el.className='msg '+(error?'err':'ok');el.style.display='block';clearTimeout(window._mt);window._mt=setTimeout(()=>el.style.display='none',3500)}
+async function startScanner(){if(!window.Html5Qrcode){message('جاري تحميل قارئ الكاميرا، حاول مرة أخرى.',true);return}if(scanner)return;scanner=new Html5Qrcode('reader');try{await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:160}},text=>{lookup(text)},()=>{});message('الكاميرا شغالة — وجهها نحو الباركود.')}catch(e){scanner=null;message('تعذر تشغيل الكاميرا. تأكد من صلاحية الكاميرا واستعمل HTTPS.',true)}}
+async function stopScanner(){if(!scanner)return;try{await scanner.stop();await scanner.clear()}catch(e){}scanner=null}
+async function lookup(code){code=String(code||'').trim();if(!code)return message('دخل الباركود أولاً.',true);manual.value='';
+let product=null,error=null;
+try{let r=await sb.from('products').select('id,name,name_fr,price,image_url,active,stock,barcode').eq('barcode',code).eq('active',true).maybeSingle();product=r.data;error=r.error;
+if(error&&/barcode/i.test(error.message||'')){const r2=await sb.from('products').select('id,name,name_fr,price,image_url,active,stock').eq('id',Number(code)).eq('active',true).maybeSingle();product=r2.data;error=r2.error}}
+catch(e){error=e}
+if(error){message('خطأ في الاتصال بقاعدة البيانات: '+error.message,true);return}if(!product){message('لم يتم العثور على منتج بهذا الباركود.',true);return}addToCart(product)}
+function addToCart(p){const key=String(p.id),item=cartItems.find(x=>String(x.id)===key);if(item)item.qty++;else cartItems.push({...p,qty:1});renderCart();message('تمت إضافة '+(p.name_fr||p.name)+' ✓')}
+function renderCart(){const box=document.getElementById('cart');if(!cartItems.length){box.innerHTML='<div class="empty">لم تتم إضافة أي منتج بعد.</div>';grand.textContent='0.00 DH';return}box.innerHTML='<table class="table"><thead><tr><th>المنتج</th><th>الثمن</th><th>الكمية</th><th>المجموع</th></tr></thead><tbody>'+cartItems.map((p,i)=>{const line=Number(p.price||0)*p.qty;return `<tr><td><div class="prod">${p.image_url?`<img src="${esc(p.image_url)}">`:''}<div><b>${esc(p.name_fr||p.name)}</b><div class="small sub">${esc(p.name)}</div></div></div></td><td>${Number(p.price||0).toFixed(2)}</td><td><div class="qty"><button onclick="changeQty(${i},-1)">−</button><b>${p.qty}</b><button onclick="changeQty(${i},1)">+</button></div></td><td><b>${line.toFixed(2)} DH</b></td></tr>`}).join('')+'</tbody></table>';grand.textContent=cartItems.reduce((s,p)=>s+Number(p.price||0)*p.qty,0).toFixed(2)+' DH'}
+function changeQty(i,d){cartItems[i].qty+=d;if(cartItems[i].qty<=0)cartItems.splice(i,1);renderCart()}
+function clearCart(){cartItems=[];renderCart()}
+function validateOrder(){if(!cartItems.length)return message('أضف منتجاً واحداً على الأقل.',true);message('تم تجهيز الطلب. يمكنك طباعته الآن.')}function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+</script></body></html>
