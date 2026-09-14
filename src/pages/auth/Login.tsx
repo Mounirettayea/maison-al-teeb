@@ -1,4 +1,5 @@
-import { FormEvent, useState } from 'react'
+import type { FormEvent } from 'react'
+import { useState } from 'react'
 import { signIn } from '../../lib/auth'
 
 export function Login({ onLoggedIn }: { onLoggedIn: () => void }) {
