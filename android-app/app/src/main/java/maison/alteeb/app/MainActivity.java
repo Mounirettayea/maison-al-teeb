@@ -37,15 +37,12 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String host = request.getUrl().getHost();
-                if (host != null && (host.equals("maisonalteeb.ma") || host.endsWith(".maisonalteeb.ma") || host.endsWith("vercel.app"))) {
-                    return false;
-                }
                 return false;
             }
         });
 
-        webView.loadUrl("https://www.maisonalteeb.ma/");
+        // Always open the Admin dashboard directly when the APK starts.
+        webView.loadUrl("https://www.maisonalteeb.ma/admin.html");
         setContentView(webView);
     }
 
