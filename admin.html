@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/supabase-config.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://unpkg.com/html5-qrcode" defer></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
 <style>
 :root{--bg:#070908;--panel:#0d1110;--panel2:#111715;--line:#26302c;--gold:#d6ad55;--gold2:#f0d58d;--text:#f5f2e9;--muted:#94a09a;--green:#17c98b;--blue:#258df5;--purple:#9b5cff;--red:#ef4444;--orange:#f5a623;--radius:18px;--shadow:0 18px 55px #0009}
 *{box-sizing:border-box}html{background:#050605}body{margin:0;background:radial-gradient(circle at 15% 0,#2b21101c,transparent 30%),linear-gradient(145deg,#050605,#0a0d0c 60%,#070807);color:var(--text);font-family:Inter,Segoe UI,Tajawal,Arial,sans-serif;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}
@@ -33,6 +33,9 @@
   <div>
     <div class="barcode-tools">
       <input id="barcode" inputmode="numeric" autocomplete="off" placeholder="Barcode">
+<button type="button" id="startAddBarcodeScannerBtn" class="btn gold" onclick="startAddBarcodeScanner()">📷 Scanner</button>
+<div id="addBarcodeStatus" class="scanner-status">اضغط Scanner لفتح الكاميرا وقراءة Barcode</div>
+<div id="addBarcodeReader" class="barcode-reader hidden"></div>
       <button class="btn dark" type="button" onclick="startAddBarcodeScanner()">📷 سكان</button>
     </div>
     <div class="barcode-help">وجّه الكاميرا للـBarcode وخليه داخل الإطار.</div>
