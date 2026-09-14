@@ -1,0 +1,50 @@
+name: Cleanup admin scanner
+
+on:
+  push:
+    paths:
+      - '.github/workflows/cleanup-admin-scanner.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove orphan scanner script
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('admin.html')
+          s = p.read_text(encoding='utf-8')
+
+          # Remove the empty script left by the previous patch. Keeping it would
+          # redeclare the global let variable and cause a JavaScript SyntaxError.
+          s = re.sub(
+              r'<script>\s*let\s+addBarcodeScanner\s*=\s*null\s*;\s*</script>',
+              '', s, flags=re.I
+          )
+
+          # Remove any remaining old scanner UI that is not the single new button.
+          s = re.sub(r'<div[^>]*id=["\']addScannerStatus["\'][^>]*>.*?</div>', '', s, flags=re.I | re.S)
+          s = re.sub(r'<button[^>]*onclick=["\'][^"\']*stopAddBarcodeScanner\s*\([^)]*\)["\'][^>]*>.*?</button>', '', s, flags=re.I | re.S)
+          s = re.sub(r'<div[^>]*id=["\']addBarcodeReaderView["\'][^>]*>.*?</div>', '', s, flags=re.I | re.S)
+
+          s = '\n'.join(line.rstrip() for line in s.split('\n'))
+          p.write_text(s, encoding='utf-8')
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add admin.html
+          if git diff --cached --quiet; then
+            echo 'No cleanup needed'
+            exit 0
+          fi
+          git commit -m 'fix: remove duplicate scanner declaration'
+          git push
