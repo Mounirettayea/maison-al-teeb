@@ -15,6 +15,7 @@ import './styles/app.css'
 
 function pageFor(pathname: string) {
   if (pathname === '/') return <StoreHome />
+  if (pathname === '/admin' || pathname === '/admin/') return <Dashboard />
   if (pathname === '/pos') return <POS />
   if (pathname === '/admin/produits') return <Products />
   if (pathname === '/admin/stock') return <Stock />
