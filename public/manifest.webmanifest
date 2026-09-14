@@ -1,0 +1,14 @@
+{
+  "name": "Maison Al Teeb — Admin",
+  "short_name": "Maison Al Teeb",
+  "description": "Maison Al Teeb — لوحة إدارة المتجر",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/admin.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#070908",
+  "theme_color": "#0e291b",
+  "icons": [{"src":"/icons/maison-al-teeb.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
