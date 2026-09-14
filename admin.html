@@ -25,26 +25,14 @@
 <div id="app" class="app hidden"><aside class="sidebar"><div class="brandbox"><div class="logo">MAISON AL TEEB<span class="arabic">منزل الطيب</span></div><small>Luxury Store · Admin Dashboard</small></div><nav class="nav"><button class="active" data-page="dashboard" onclick="go('dashboard',this)"><i data-lucide="layout-dashboard" size="18"></i><span>Dashboard</span></button><button data-page="products" onclick="go('products',this)"><i data-lucide="package" size="18"></i><span>Produits</span></button><button data-page="stock" onclick="go('stock',this)"><i data-lucide="boxes" size="18"></i><span>Stock</span></button><button data-page="orders" onclick="go('orders',this)"><i data-lucide="shopping-bag" size="18"></i><span>Ventes</span></button><button data-page="add" onclick="go('add',this)"><i data-lucide="plus-circle" size="18"></i><span>Ajouter</span></button></nav><div class="sidebar-foot"><button class="btn danger" onclick="logout()"><i data-lucide="log-out" size="16"></i> خروج</button></div></aside>
 <main class="main"><header class="topbar"><div class="topbar-left"><div><div class="eyebrow">MAISON AL TEEB · ADMIN</div><h1 id="pageTitle">Dashboard</h1><div class="sub">لوحة التحكم الخاصة بالمتجر</div></div></div><div class="top-actions"><a class="btn dark" href="/" title="المتجر"><i data-lucide="store" size="16"></i><span>المتجر</span></a><button class="btn gold" onclick="loadDashboard()"><i data-lucide="refresh-cw" size="16"></i><span>تحديث</span></button></div></header><div id="msg" class="msg hidden"></div>
 <section id="dashboard" class="page active"><div class="hero"><div class="eyebrow">BONJOUR ADMIN 👋</div><h2>هذا ملخص النشاط ديال Maison Al Teeb اليوم</h2><p>راقب المبيعات، المنتجات والمخزون من نفس المكان.</p><div class="date"><i data-lucide="calendar-days" size="14"></i><span id="today"></span><span>·</span><i data-lucide="clock" size="14"></i><span id="clock"></span></div></div><div class="stats"><div class="stat"><div class="stat-icon greenbg"><i data-lucide="banknote" size="21"></i></div><div class="stat-label">Chiffre d'affaires اليوم</div><div class="stat-value" id="revenue">0 DH</div><div class="trend" id="revenueNote">من الطلبات المؤكدة</div></div><div class="stat"><div class="stat-icon bluebg"><i data-lucide="shopping-cart" size="21"></i></div><div class="stat-label">Nombre de ventes</div><div class="stat-value" id="salesCount">0</div><div class="trend">طلبات اليوم</div></div><div class="stat"><div class="stat-icon purplebg"><i data-lucide="package-check" size="21"></i></div><div class="stat-label">Produits vendus</div><div class="stat-value" id="unitsSold">0</div><div class="trend">قطع اليوم</div></div><div class="stat"><div class="stat-icon goldbg"><i data-lucide="boxes" size="21"></i></div><div class="stat-label">Produits en stock</div><div class="stat-value" id="stockUnits">0</div><div class="trend" id="stockNote">0 تنبيهات</div></div></div><div class="grid2"><div><div class="card"><div class="card-head"><div><h3>Évolution des ventes</h3><span>Chiffre d'affaires des 7 derniers jours</span></div><div class="tabs"><button class="active">7 jours</button><button>30 jours</button><button>12 mois</button></div></div><div class="chart"><svg id="salesChart" viewBox="0 0 700 240" preserveAspectRatio="none"></svg></div><div class="chart-labels" id="chartLabels"></div></div><div class="card"><div class="card-head"><h3>Produits les plus vendus</h3><span>حسب الطلبات</span></div><div id="topProducts" class="list"></div></div><div class="card"><div class="card-head"><h3>Dernières ventes</h3><span>آخر الطلبات</span></div><div id="recentSales" class="list"></div></div></div><div><div class="card"><div class="card-head"><h3>Ventes par catégorie</h3><span>من القطع المباعة</span></div><div class="donut-wrap"><div class="donut"><div class="donut-center"><b id="catTotal">0</b><span>produits</span></div></div><div id="catLegend" class="legend"></div></div></div><div class="card"><div class="card-head"><h3>Stock critique</h3><button class="btn dark" onclick="go('stock')">Voir tout</button></div><div id="criticalStock"></div></div><div class="card"><div class="card-head"><h3>Moyens de paiement</h3><span>من الطلبات</span></div><div class="payment"><div class="pay-ring"><span id="payTotal">0 DH</span></div><div id="paymentLegend" class="legend"></div></div></div><div class="card"><div class="card-head"><h3>Alertes & Notifications</h3></div><div id="alerts" class="list"></div></div></div></div></section>
-<section id="products" class="page"><div class="card"><div class="card-head"><h3>Produits</h3><span>إدارة منتجات Maison Al Teeb</span></div><div class="searchbar"><input id="search" placeholder="🔎 الاسم أو Barcode..." oninput="renderProducts()"><select id="cat" onchange="renderProducts()"><option value="">كل الفئات</option></select><select id="status" onchange="renderProducts()"><option value="">كل الحالات</option><option value="ok">متوفر</option><option value="low">مخزون ضعيف</option><option value="out">نفد المخزون</option></select></div></div><div class="card table-wrap"><table class="table"><thead><tr><th>Produit</th><th>Barcode</th><th>Catégorie</th><th>Prix</th><th>Stock</th><th>État</th><th>Action</th></tr></thead><tbody id="productsBody"></tbody></table></div><div id="editProductCard" class="card hidden"><div class="card-head"><div><h3>✏️ تعديل المنتج</h3><span>عدّل جميع معلومات المنتج وحفظها مباشرة في Supabase</span></div><button class="btn dark" type="button" onclick="closeEditProduct()">✕ إغلاق</button></div><form id="editProductForm" onsubmit="saveProductEdit(event)"><input id="edit_id" type="hidden"><div class="edit-preview"><img id="edit_preview" src="" alt=""><div><b id="edit_preview_name">Produit</b><div class="sub">ID: <span id="edit_preview_id">—</span></div></div></div><div class="edit-form-grid"><div class="field"><label>اسم المنتج</label><input id="edit_name" required></div><div class="field"><label>Nom français</label><input id="edit_name_fr"></div><div class="field"><label>English name</label><input id="edit_name_en"></div><div class="field"><label>Catégorie</label><input id="edit_category"></div><div class="field"><label>Genre</label><select id="edit_gender"><option value="">—</option><option value="homme">Homme</option><option value="femme">Femme</option><option value="unisex">Unisex</option><option value="unisexe">Unisexe</option></select></div><div class="field"><label>Size</label><input id="edit_size"></div><div class="field"><label>Prix DH</label><input id="edit_price" type="number" min="0" step=".01" required></div><div class="field"><label>Ancien prix DH</label><input id="edit_old_price" type="number" min="0" step=".01"></div><div class="field"><label>Discount %</label><input id="edit_discount" type="number" min="0" step=".01"></div><div class="field"><label>Stock</label><input id="edit_stock" type="number" min="0"></div><div class="field"><label>Low stock threshold</label><input id="edit_threshold" type="number" min="0"></div><div class="field"><label>Barcode</label><div class="barcode-tools"><input id="edit_barcode" inputmode="numeric" autocomplete="off"></div><div class="barcode-help">وجّه الكاميرا للـBarcode وخليه داخل الإطار.</div><div id="barcodeReader" class="barcode-reader hidden"><div id="barcodeReaderView"></div><div id="scannerStatus" class="scanner-status">جاري تشغيل الكاميرا...</div><button class="btn danger" type="button" onclick="stopBarcodeScanner()" style="margin:8px">✕ إيقاف السكان</button></div></div><div class="field full"><label>رابط الصورة</label><input id="edit_image" type="url" placeholder="https://..."></div><div class="field full"><label>Description</label><textarea id="edit_description"></textarea></div></div><div class="check-row"><label><input id="edit_best" type="checkbox"> Best seller</label><label><input id="edit_active" type="checkbox"> Active</label></div><div class="edit-actions"><button class="btn dark" type="button" onclick="closeEditProduct()">إلغاء</button><button class="btn gold" type="submit">💾 حفظ التعديلات</button></div></form></div></section>
+<section id="products" class="page"><div class="card"><div class="card-head"><h3>Produits</h3><span>إدارة منتجات Maison Al Teeb</span></div><div class="searchbar"><input id="search" placeholder="🔎 الاسم أو Barcode..." oninput="renderProducts()"><select id="cat" onchange="renderProducts()"><option value="">كل الفئات</option></select><select id="status" onchange="renderProducts()"><option value="">كل الحالات</option><option value="ok">متوفر</option><option value="low">مخزون ضعيف</option><option value="out">نفد المخزون</option></select></div></div><div class="card table-wrap"><table class="table"><thead><tr><th>Produit</th><th>Barcode</th><th>Catégorie</th><th>Prix</th><th>Stock</th><th>État</th><th>Action</th></tr></thead><tbody id="productsBody"></tbody></table></div><div id="editProductCard" class="card hidden"><div class="card-head"><div><h3>✏️ تعديل المنتج</h3><span>عدّل جميع معلومات المنتج وحفظها مباشرة في Supabase</span></div><button class="btn dark" type="button" onclick="closeEditProduct()">✕ إغلاق</button></div><form id="editProductForm" onsubmit="saveProductEdit(event)"><input id="edit_id" type="hidden"><div class="edit-preview"><img id="edit_preview" src="" alt=""><div><b id="edit_preview_name">Produit</b><div class="sub">ID: <span id="edit_preview_id">—</span></div></div></div><div class="edit-form-grid"><div class="field"><label>اسم المنتج</label><input id="edit_name" required></div><div class="field"><label>Nom français</label><input id="edit_name_fr"></div><div class="field"><label>English name</label><input id="edit_name_en"></div><div class="field"><label>Catégorie</label><input id="edit_category"></div><div class="field"><label>Genre</label><select id="edit_gender"><option value="">—</option><option value="homme">Homme</option><option value="femme">Femme</option><option value="unisex">Unisex</option><option value="unisexe">Unisexe</option></select></div><div class="field"><label>Size</label><input id="edit_size"></div><div class="field"><label>Prix DH</label><input id="edit_price" type="number" min="0" step=".01" required></div><div class="field"><label>Ancien prix DH</label><input id="edit_old_price" type="number" min="0" step=".01"></div><div class="field"><label>Discount %</label><input id="edit_discount" type="number" min="0" step=".01"></div><div class="field"><label>Stock</label><input id="edit_stock" type="number" min="0"></div><div class="field"><label>Low stock threshold</label><input id="edit_threshold" type="number" min="0"></div><div class="field"><label>Barcode</label><div class="barcode-tools"><input id="edit_barcode" inputmode="numeric" autocomplete="off"><button type="button" id="startEditBarcodeScannerBtn" class="btn gold" onclick="startBarcodeScanner()">📷 تشغيل الكاميرا</button><button type="button" id="stopEditBarcodeScannerBtn" class="btn danger" onclick="stopBarcodeScanner()">✕ إيقاف</button></div><div class="barcode-help">اضغط تشغيل الكاميرا، ومن بعد وجّهها للـBarcode داخل الإطار.</div><div id="barcodeReader" class="barcode-reader hidden"><div id="barcodeReaderView"></div><div id="scannerStatus" class="scanner-status">الكاميرا متوقفة</div></div></div><div class="field full"><label>رابط الصورة</label><input id="edit_image" type="url" placeholder="https://..."></div><div class="field full"><label>Description</label><textarea id="edit_description"></textarea></div></div><div class="check-row"><label><input id="edit_best" type="checkbox"> Best seller</label><label><input id="edit_active" type="checkbox"> Active</label></div><div class="edit-actions"><button class="btn dark" type="button" onclick="closeEditProduct()">إلغاء</button><button class="btn gold" type="submit">💾 حفظ التعديلات</button></div></form></div></section>
 <section id="stock" class="page"><div class="card"><div class="card-head"><div><h3>Gestion de Stock</h3><span>تعديل مباشر للكمية وحد التنبيه</span></div><button class="btn gold" onclick="saveAll()">💾 حفظ الكل</button></div><input id="stockSearch" placeholder="🔎 بحث عن منتج أو Barcode..." oninput="renderStock()"></div><div class="card table-wrap"><table class="table"><thead><tr><th>Produit</th><th>Barcode</th><th>Stock</th><th>Seuil</th><th>État</th><th></th></tr></thead><tbody id="stockBody"></tbody></table></div></section>
 <section id="orders" class="page"><div class="card"><div class="card-head"><h3>Ventes & Commandes</h3><span>آخر الطلبات المسجلة</span></div><div class="searchbar"><input id="orderSearch" placeholder="🔎 بحث بالـID أو الحالة..." oninput="renderOrders()"><select id="orderStatus" onchange="renderOrders()"><option value="">كل الحالات</option><option value="new">جديد</option><option value="preparing">تحضير</option><option value="ready">جاهز</option><option value="served">مكتمل</option><option value="cancelled">ملغى</option></select></div></div><div class="card table-wrap"><table class="table"><thead><tr><th>Commande</th><th>Statut</th><th>Total</th><th>Date</th></tr></thead><tbody id="ordersBody"></tbody></table></div></section>
 <section id="add" class="page"><div class="card"><div class="card-head"><div><h3>إضافة منتج جديد</h3><span>زيد منتج جديد مباشرة لـSupabase</span></div></div><form id="addForm" onsubmit="addProduct(event)"><div class="searchbar" style="grid-template-columns:1fr 1fr">
   <input id="name" required placeholder="اسم المنتج *">
   <div>
     <div class="barcode-tools">
-      <input id="barcode" inputmode="numeric" autocomplete="off" placeholder="Barcode">
-<button type="button" id="startAddBarcodeScannerBtn" class="btn gold" onclick="startAddBarcodeScanner()">📷 Scanner</button>
-<div id="addBarcodeStatus" class="scanner-status">اضغط Scanner لفتح الكاميرا وقراءة Barcode</div>
-<div id="addBarcodeReader" class="barcode-reader hidden"></div>
-
-
-
-
-
-
-
-    </div>
-    <div class="barcode-help">وجّه الكاميرا للـBarcode وخليه داخل الإطار.</div>
+      <input id="barcode" inputmode="numeric" autocomplete="off" placeholder="Barcode"><button type="button" id="startAddBarcodeScannerBtn" class="btn gold" onclick="startAddBarcodeScanner()">📷 تشغيل الكاميرا</button><button type="button" id="stopAddBarcodeScannerBtn" class="btn danger" onclick="stopAddBarcodeScanner()">✕ إيقاف</button><div id="addBarcodeStatus" class="scanner-status">الكاميرا متوقفة — اضغط تشغيل الكاميرا</div><div id="addBarcodeReader" class="barcode-reader hidden"><div id="addBarcodeReaderView"></div></div><div class="barcode-help">وجّه الكاميرا للـBarcode وخليه داخل الإطار.</div>
     </div>
   </div>
 </div><div class="searchbar" style="grid-template-columns:1fr 1fr;margin-top:9px"><input id="name_fr" placeholder="Nom français"><input id="name_en" placeholder="English name"></div><div class="searchbar" style="grid-template-columns:1fr 1fr 1fr;margin-top:9px"><select id="category"><option>العطور</option><option>الزيوت</option><option>العناية بالجسم</option><option>البخور</option><option>مكملات غذائية</option><option>أخرى</option></select><input id="size" placeholder="الحجم: 30 ml"><input id="price" type="number" min="0" step=".01" required placeholder="الثمن DH *"></div><div class="searchbar" style="grid-template-columns:1fr 1fr 1fr;margin-top:9px"><input id="stock_new" type="number" min="0" value="0" placeholder="Stock"><input id="threshold_new" type="number" min="0" value="5" placeholder="Seuil"><input id="image_url" placeholder="رابط الصورة"></div><button class="btn gold" type="submit" style="margin-top:13px">💾 إضافة المنتج</button></form></div></section>
@@ -80,54 +68,141 @@ lucide.createIcons();
 
 <script>
 let addBarcodeScanner = null;
-async function startAddBarcodeScanner() {
-  const reader = document.getElementById('addBarcodeReader');
-  const status = document.getElementById('addBarcodeStatus');
-  const input = document.getElementById('barcode');
-  if (!reader || !input) return alert('Scanner: champ Barcode introuvable');
-  if (typeof Html5Qrcode === 'undefined') {
-    if (status) status.textContent = 'Scanner غير متاح. حدّث الصفحة وحاول من جديد.';
-    return;
-  }
+let barcodeScanner = null;
+let addScannerBusy = false;
+let editScannerBusy = false;
+
+async function stopHtmlScanner(instance) {
+  if (!instance) return;
+  try { if (instance.isScanning) await instance.stop(); } catch (_) {}
+  try { await instance.clear(); } catch (_) {}
+}
+
+function setScannerButtonState(prefix, running) {
+  const start = document.getElementById(prefix + 'StartBarcodeScannerBtn');
+  const stop = document.getElementById(prefix + 'StopBarcodeScannerBtn');
+  if (start) start.disabled = running;
+  if (stop) stop.disabled = !running;
+}
+
+async function createReliableScanner(readerId, statusId, inputId, prefix, onDecoded) {
+  const reader = document.getElementById(readerId);
+  const status = document.getElementById(statusId);
+  const input = document.getElementById(inputId);
+  if (!reader || !status || !input) throw new Error('Scanner UI introuvable');
+  if (typeof Html5Qrcode === 'undefined') throw new Error('Html5Qrcode غير محمل');
+
+  reader.classList.remove('hidden');
+  status.textContent = 'جاري تشغيل الكاميرا...';
+  setScannerButtonState(prefix, true);
+
+  const scanner = new Html5Qrcode(readerId);
+  const config = {fps: 10, qrbox: {width: 280, height: 140}, aspectRatio: 1.777};
+  const success = async decoded => {
+    if (!decoded) return;
+    await onDecoded(String(decoded).trim(), scanner, reader, status, input, prefix);
+  };
+
   try {
-    if (addBarcodeScanner) {
-      try { await addBarcodeScanner.stop(); } catch (_) {}
-      try { await addBarcodeScanner.clear(); } catch (_) {}
+    // Rear camera. Avoid facingMode: {exact:'environment'} because some Android browsers reject it.
+    await scanner.start({facingMode: 'environment'}, config, success, () => {});
+  } catch (firstError) {
+    // Fallback to a real camera ID if facingMode is rejected.
+    try {
+      const cameras = await Html5Qrcode.getCameras();
+      if (!cameras || !cameras.length) throw firstError;
+      const back = cameras.find(c => /back|rear|environment|arrière|trasera|dorsal/i.test(c.label || '')) || cameras[cameras.length - 1];
+      await scanner.start(back.id, config, success, () => {});
+    } catch (secondError) {
+      await stopHtmlScanner(scanner);
+      setScannerButtonState(prefix, false);
+      reader.classList.add('hidden');
+      throw secondError || firstError;
     }
-    reader.classList.remove('hidden');
-    if (status) status.textContent = 'وجه الكاميرا نحو Barcode...';
-    addBarcodeScanner = new Html5Qrcode('addBarcodeReader');
-    await addBarcodeScanner.start(
-      { facingMode: { exact: 'environment' } },
-      { fps: 10, qrbox: { width: 280, height: 140 } },
-      async decoded => {
+  }
+  return scanner;
+}
+
+async function startAddBarcodeScanner() {
+  if (addScannerBusy || addBarcodeScanner) return;
+  addScannerBusy = true;
+  const status = document.getElementById('addBarcodeStatus');
+  try {
+    addBarcodeScanner = await createReliableScanner('addBarcodeReaderView', 'addBarcodeStatus', 'barcode', 'add',
+      async (decoded, scanner, reader, status, input, prefix) => {
         input.value = decoded;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-        if (status) status.textContent = 'تم قراءة Barcode: ' + decoded;
-        try { await addBarcodeScanner.stop(); } catch (_) {}
-        try { await addBarcodeScanner.clear(); } catch (_) {}
+        input.dispatchEvent(new Event('input', {bubbles:true}));
+        input.dispatchEvent(new Event('change', {bubbles:true}));
+        status.textContent = 'تمت قراءة Barcode ✓';
+        await stopHtmlScanner(scanner);
         addBarcodeScanner = null;
         reader.classList.add('hidden');
-      },
-      () => {}
-    );
-  } catch (_) {
-    if (status) status.textContent = 'ما قدرناش نفتحو الكاميرا. عطِ صلاحية Camera للمتصفح وحاول من جديد.';
-    try { if (addBarcodeScanner) await addBarcodeScanner.clear(); } catch (_) {}
+        setScannerButtonState(prefix, false);
+        addScannerBusy = false;
+      });
+    status.textContent = 'الكاميرا شغالة — وجّهها نحو Barcode';
+  } catch (e) {
     addBarcodeScanner = null;
-    reader.classList.add('hidden');
+    addScannerBusy = false;
+    if (status) status.textContent = 'تعذر تشغيل الكاميرا. سمح للمتصفح بالكاميرا وتأكد من HTTPS.';
+    setScannerButtonState('add', false);
+    console.error('ADD BARCODE SCANNER', e);
   }
 }
-function stopAddBarcodeScanner() {
-  if (addBarcodeScanner) {
-    addBarcodeScanner.stop().catch(() => {});
-    addBarcodeScanner.clear().catch(() => {});
-    addBarcodeScanner = null;
-  }
+
+async function stopAddBarcodeScanner() {
+  addScannerBusy = false;
+  await stopHtmlScanner(addBarcodeScanner);
+  addBarcodeScanner = null;
   const reader = document.getElementById('addBarcodeReader');
+  const status = document.getElementById('addBarcodeStatus');
   if (reader) reader.classList.add('hidden');
+  if (status) status.textContent = 'الكاميرا متوقفة — اضغط تشغيل الكاميرا';
+  setScannerButtonState('add', false);
 }
+
+async function startBarcodeScanner() {
+  if (editScannerBusy || barcodeScanner) return;
+  editScannerBusy = true;
+  const status = document.getElementById('scannerStatus');
+  try {
+    barcodeScanner = await createReliableScanner('barcodeReaderView', 'scannerStatus', 'edit_barcode', 'edit',
+      async (decoded, scanner, reader, status, input, prefix) => {
+        input.value = decoded;
+        input.dispatchEvent(new Event('input', {bubbles:true}));
+        input.dispatchEvent(new Event('change', {bubbles:true}));
+        status.textContent = 'تمت قراءة Barcode ✓';
+        await stopHtmlScanner(scanner);
+        barcodeScanner = null;
+        reader.classList.add('hidden');
+        setScannerButtonState(prefix, false);
+        editScannerBusy = false;
+      });
+    if (status) status.textContent = 'الكاميرا شغالة — وجّهها نحو Barcode';
+  } catch (e) {
+    barcodeScanner = null;
+    editScannerBusy = false;
+    if (status) status.textContent = 'تعذر تشغيل الكاميرا. سمح للمتصفح بالكاميرا وتأكد من HTTPS.';
+    setScannerButtonState('edit', false);
+    console.error('EDIT BARCODE SCANNER', e);
+  }
+}
+
+async function stopBarcodeScanner() {
+  editScannerBusy = false;
+  await stopHtmlScanner(barcodeScanner);
+  barcodeScanner = null;
+  const reader = document.getElementById('barcodeReader');
+  const status = document.getElementById('scannerStatus');
+  if (reader) reader.classList.add('hidden');
+  if (status) status.textContent = 'الكاميرا متوقفة';
+  setScannerButtonState('edit', false);
+}
+
+window.addEventListener('pagehide', () => {
+  stopAddBarcodeScanner();
+  stopBarcodeScanner();
+});
 </script>
 </body>
 </html>
