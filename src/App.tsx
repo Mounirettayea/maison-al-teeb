@@ -31,22 +31,48 @@ export default function App() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
+    let mounted = true
     const load = async () => {
       try {
         const session = await getSession()
-        setProfile(session ? await getProfile(session.user.id) : null)
-      } finally { setReady(true) }
+        if (mounted) setProfile(session ? await getProfile(session.user.id) : null)
+      } catch {
+        if (mounted) setProfile(null)
+      } finally {
+        if (mounted) setReady(true)
+      }
     }
+
     load()
-    const { data } = onAuthStateChange(async (session) => setProfile(session ? await getProfile(session.user.id) : null))
+    const { data } = onAuthStateChange(async (session) => {
+      if (!mounted) return
+      if (!session) {
+        setProfile(null)
+        return
+      }
+      try {
+        setProfile(await getProfile(session.user.id))
+      } catch {
+        setProfile(null)
+      }
+    })
+
     const onPopState = () => setPath(window.location.pathname)
     window.addEventListener('popstate', onPopState)
-    return () => { data.subscription.unsubscribe(); window.removeEventListener('popstate', onPopState) }
+    return () => {
+      mounted = false
+      data.subscription.unsubscribe()
+      window.removeEventListener('popstate', onPopState)
+    }
   }, [])
 
   if (!ready) return <div className="loading-page">Chargement...</div>
   if (path === '/') return pageFor(path)
-  if (!profile) return <Login onLoggedIn={() => { setProfile({ id: 'session', full_name: null, role: 'cashier' }); setPath('/pos') }} />
-  if (path.startsWith('/admin/parametres') && profile.role !== 'admin') return <AppLayout><Dashboard /></AppLayout>
+  if (!profile) return <Login onLoggedIn={() => setPath('/pos')} />
+
+  if (path.startsWith('/admin/parametres') && profile.role !== 'admin') {
+    return <AppLayout><Dashboard /></AppLayout>
+  }
+
   return <AppLayout>{pageFor(path)}</AppLayout>
 }
