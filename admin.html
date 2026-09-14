@@ -36,11 +36,13 @@
 <button type="button" id="startAddBarcodeScannerBtn" class="btn gold" onclick="startAddBarcodeScanner()">📷 Scanner</button>
 <div id="addBarcodeStatus" class="scanner-status">اضغط Scanner لفتح الكاميرا وقراءة Barcode</div>
 <div id="addBarcodeReader" class="barcode-reader hidden"></div>
-      <button class="btn dark" type="button" onclick="startAddBarcodeScanner()">📷 سكان</button>
+
+
+
+
     </div>
     <div class="barcode-help">وجّه الكاميرا للـBarcode وخليه داخل الإطار.</div>
-    <div id="addBarcodeReader" class="barcode-reader hidden">
-      <div id="addBarcodeReaderView"></div>
+
       <div id="addScannerStatus" class="scanner-status">جاري تشغيل الكاميرا...</div>
       <button class="btn danger" type="button" onclick="stopAddBarcodeScanner()" style="margin:8px">✕ إيقاف السكان</button>
     </div>
@@ -62,16 +64,7 @@ function renderAlerts(){const low=products.filter(p=>state(p)!=='ok').sort((a,b)
 function renderProducts(){if(!$('productsBody'))return;const q=($('search')?.value||'').toLowerCase(),c=$('cat')?.value||'',s=$('status')?.value||'';const cats=[...new Set(products.map(p=>p.category).filter(Boolean))];$('cat').innerHTML='<option value="">كل الفئات</option>'+cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');$('cat').value=c;const list=products.filter(p=>(!q||(p.name||'').toLowerCase().includes(q)||(p.name_fr||'').toLowerCase().includes(q)||(p.name_en||'').toLowerCase().includes(q)||(p.barcode||'').toLowerCase().includes(q))&&(!c||p.category===c)&&(!s||state(p)===s));$('productsBody').innerHTML=list.length?list.map(p=>'<tr><td><div class="product-cell">'+(p.image?'<img src="'+esc(p.image)+'">':'<div class="thumb"></div>')+'<div><b>'+esc(p.name)+'</b><br><small style="color:#66736d">ID: '+p.id+'</small></div></div></td><td>'+esc(p.barcode||'—')+'</td><td>'+esc(p.category||'—')+'</td><td>'+money(p.price)+'</td><td>'+p.stock+'</td><td><span class="badge '+state(p)+'">'+stateLabel(state(p))+'</span></td><td><button class="btn gold" style="padding:7px 10px" onclick="openEditProduct('+p.id+')">✏️ تعديل</button></td></tr>').join(''):'<tr><td colspan="7" class="empty">ما لقيّنا حتى منتج.</td></tr>'}
 async function openEditProduct(id){stopBarcodeScanner();const p=products.find(x=>x.id===id);if(!p)return;$('editProductCard').classList.remove('hidden');$('edit_id').value=p.id;$('edit_name').value=p.name||'';$('edit_name_fr').value=p.name_fr||'';$('edit_name_en').value=p.name_en||'';$('edit_category').value=p.category||'';$('edit_gender').value=p.gender||'';$('edit_size').value=p.size||'';$('edit_price').value=p.price??0;$('edit_old_price').value=p.old_price??'';$('edit_discount').value=p.discount??'';$('edit_stock').value=p.stock??0;$('edit_threshold').value=p.low_stock_threshold??5;$('edit_barcode').value=p.barcode||'';$('edit_image').value=p.image||'';$('edit_description').value=p.description||'';$('edit_best').checked=!!p.is_best_seller;$('edit_active').checked=p.active!==false;$('edit_preview_name').textContent=p.name||'Produit';$('edit_preview_id').textContent=p.id;$('edit_preview').src=p.image||'';$('edit_preview').style.display=p.image?'block':'none';$('editProductCard').scrollIntoView({behavior:'smooth',block:'start'})}
 function closeEditProduct(){stopBarcodeScanner();$('editProductCard').classList.add('hidden')}
-async function startAddBarcodeScanner(){
-  if(!window.Html5Qrcode){flash('السكانر مازال كيتحمل، عاود ضغط سكان بعد لحظة.',true);return;}
-  if(!window.isSecureContext && location.hostname!=='localhost'){flash('الكاميرا كتحتاج HTTPS باش تخدم.',true);return;}
-  await stopAddBarcodeScanner(); $('addBarcodeReader').classList.remove('hidden'); $('addScannerStatus').textContent='جاري تشغيل الكاميرا...'; addBarcodeScanner=new Html5Qrcode('addBarcodeReaderView');
-  try{
-    const formats=window.Html5QrcodeSupportedFormats?[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.ITF]:undefined;
-    const config={fps:10,qrbox:{width:280,height:140},aspectRatio:1.777}; if(formats)config.formatsToSupport=formats;
-    await addBarcodeScanner.start({facingMode:{ideal:'environment'}},config,async decodedText=>{const code=String(decodedText||'').trim();if(!code)return;$('barcode').value=code;$('addScannerStatus').textContent='تم التقاط Barcode: '+code;flash('تم سكان الـBarcode بنجاح ✅');await stopAddBarcodeScanner();$('barcode').focus();},()=>{});
-  }catch(err){console.error(err);flash('ما قدرناش نشغلو الكاميرا. سمح للموقع باستعمال الكاميرا.',true);await stopAddBarcodeScanner();}
-}
+
 async function stopAddBarcodeScanner(){if(addBarcodeScanner){try{if(addBarcodeScanner.isScanning)await addBarcodeScanner.stop();}catch(e){}try{await addBarcodeScanner.clear();}catch(e){}addBarcodeScanner=null;}$('addBarcodeReader')?.classList.add('hidden');}
 
 
@@ -83,6 +76,56 @@ async function saveAll(){for(const p of products){const q=$('q'+p.id),t=$('t'+p.
 function renderOrders(){if(!$('ordersBody'))return;const q=($('orderSearch').value||'').toLowerCase(),s=$('orderStatus').value||'';const list=orders.filter(o=>(!q||String(o.id).toLowerCase().includes(q)||(o.status||'').toLowerCase().includes(q))&&(!s||o.status===s)).slice(0,100);$('ordersBody').innerHTML=list.length?list.map(o=>'<tr><td><b>#'+esc(String(o.id).slice(0,12))+'</b></td><td><span class="badge '+(o.status==='cancelled'?'out':o.status==='served'?'ok':'low')+'">'+esc(o.status)+'</span></td><td><b>'+money(o.total)+'</b></td><td>'+new Date(o.created_at).toLocaleString('fr-MA')+'</td></tr>').join(''):'<tr><td colspan="4" class="empty">ما كايناش طلبات.</td></tr>'}
 async function addProduct(e){e.preventDefault();const row={name:$('name').value.trim(),barcode:$('barcode').value.trim()||null,name_fr:$('name_fr').value.trim()||null,name_en:$('name_en').value.trim()||null,category:$('category').value,size:$('size').value.trim()||null,price:Number($('price').value),stock:Math.max(0,Number($('stock_new').value)||0),low_stock_threshold:Math.max(0,Number($('threshold_new').value)||5),image:$('image_url').value.trim()||null,active:true};const {error}=await db.from('products').insert(row);if(error){flash(error.message,true);return}flash('تمت إضافة المنتج بنجاح ✅');$('addForm').reset();$('stock_new').value=0;$('threshold_new').value=5;await loadDashboard();go('products')}
 lucide.createIcons();
+</script>
+<script>
+let addBarcodeScanner = null;
+async function startAddBarcodeScanner() {
+  const reader = document.getElementById('addBarcodeReader');
+  const status = document.getElementById('addBarcodeStatus');
+  const input = document.getElementById('barcode');
+  if (!reader || !input) return alert('Scanner: champ Barcode introuvable');
+  if (typeof Html5Qrcode === 'undefined') {
+    if (status) status.textContent = 'Scanner غير متاح. حدّث الصفحة وحاول من جديد.';
+    return;
+  }
+  try {
+    if (addBarcodeScanner) {
+      try { await addBarcodeScanner.stop(); } catch (_) {}
+      try { await addBarcodeScanner.clear(); } catch (_) {}
+    }
+    reader.classList.remove('hidden');
+    if (status) status.textContent = 'وجه الكاميرا نحو Barcode...';
+    addBarcodeScanner = new Html5Qrcode('addBarcodeReader');
+    await addBarcodeScanner.start(
+      { facingMode: { exact: 'environment' } },
+      { fps: 10, qrbox: { width: 280, height: 140 } },
+      async decoded => {
+        input.value = decoded;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        if (status) status.textContent = 'تم قراءة Barcode: ' + decoded;
+        try { await addBarcodeScanner.stop(); } catch (_) {}
+        try { await addBarcodeScanner.clear(); } catch (_) {}
+        addBarcodeScanner = null;
+        reader.classList.add('hidden');
+      },
+      () => {}
+    );
+  } catch (_) {
+    if (status) status.textContent = 'ما قدرناش نفتحو الكاميرا. عطِ صلاحية Camera للمتصفح وحاول من جديد.';
+    try { if (addBarcodeScanner) await addBarcodeScanner.clear(); } catch (_) {}
+    addBarcodeScanner = null;
+  }
+}
+function stopAddBarcodeScanner() {
+  if (addBarcodeScanner) {
+    addBarcodeScanner.stop().catch(() => {});
+    addBarcodeScanner.clear().catch(() => {});
+    addBarcodeScanner = null;
+  }
+  const reader = document.getElementById('addBarcodeReader');
+  if (reader) reader.classList.add('hidden');
+}
 </script>
 </body>
 </html>
