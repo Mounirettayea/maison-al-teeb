@@ -88,3 +88,24 @@ window.MAISON_SUPABASE = {
   }
   const boot=()=>{injectCss();setup()};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();const observer=new MutationObserver(()=>setup());if(document.documentElement)observer.observe(document.documentElement,{childList:true,subtree:true});
 })();
+
+// MAISON AL TEEB — PWA setup. The installed app always opens Admin.
+(function () {
+  try {
+    if (!document.querySelector('link[rel="manifest"]')) {
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = '/manifest.webmanifest';
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector('meta[name="theme-color"]')) {
+      const meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      meta.content = '#0e291b';
+      document.head.appendChild(meta);
+    }
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch(() => {}));
+    }
+  } catch (e) { console.warn('PWA setup failed', e); }
+})();
