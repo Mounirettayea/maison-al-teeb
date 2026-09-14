@@ -13,95 +13,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch admin scanner
+      - name: Fix scanner syntax
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
-
-          p = Path('admin.html')
-          s = p.read_text(encoding='utf-8')
-
-          if 'function startAddBarcodeScanner()' not in s:
-              pattern = r'<div class="searchbar" style="grid-template-columns:1fr 1fr">\s*<input id="name"[^>]*>\s*<input id="barcode"[^>]*>\s*</div>'
-              repl = '''<div class="searchbar" style="grid-template-columns:1fr 1fr">
-          <input id="name" required placeholder="اسم المنتج *">
-          <div class="barcode-tools">
-            <input id="barcode" placeholder="Barcode">
-            <button type="button" class="btn dark" onclick="startAddBarcodeScanner()"><i data-lucide="scan-barcode"></i> سكان الباركود</button>
-          </div>
-          </div>
-          <div id="addBarcodeReader" class="barcode-reader hidden">
-            <div id="addBarcodeQr"></div>
-            <div id="addBarcodeStatus" class="scanner-status">وجه الكاميرا نحو الباركود...</div>
-          </div>'''
-              s, n = re.subn(pattern, repl, s, count=1)
-              if n != 1:
-                  raise SystemExit('Add Product barcode block not found')
-
-              marker = "let editBarcodeScanner=null;"
-              if marker in s and 'let addBarcodeScanner=null;' not in s:
-                  s = s.replace(marker, marker + "\nlet addBarcodeScanner=null;", 1)
-              elif 'let addBarcodeScanner=null;' not in s:
-                  s = s.replace('<script>', '<script>\nlet addBarcodeScanner=null;', 1)
-
-              funcs = r'''\nasync function startAddBarcodeScanner(){
-  const reader=document.getElementById('addBarcodeReader');
-  const status=document.getElementById('addBarcodeStatus');
-  if(!reader || !window.Html5Qrcode){
-    if(status) status.textContent='السكانر مازال كيتحمل، عاود المحاولة بعد لحظات.';
-    return;
-  }
-  if(!window.isSecureContext && location.hostname!=='localhost'){
-    if(status) status.textContent='الكاميرا كتحتاج HTTPS.';
-    return;
-  }
-  await stopAddBarcodeScanner();
-  reader.classList.remove('hidden');
-  if(status) status.textContent='جاري تشغيل الكاميرا...';
-  addBarcodeScanner=new Html5Qrcode('addBarcodeQr');
-  const formats=[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.ITF];
-  try{
-    await addBarcodeScanner.start({facingMode:{ideal:'environment'}},{fps:10,qrbox:{width:280,height:120},formatsToSupport:formats},async(decodedText)=>{
-      const input=document.getElementById('barcode');
-      if(input) input.value=decodedText.trim();
-      if(status) status.textContent='تم التعرف على الباركود: '+decodedText.trim();
-      await stopAddBarcodeScanner();
-    },()=>{});
-  }catch(err){
-    if(status) status.textContent='تعذر تشغيل الكاميرا. تأكد من صلاحية الكاميرا و HTTPS.';
-    await stopAddBarcodeScanner();
-  }
-}
-async function stopAddBarcodeScanner(){
-  if(addBarcodeScanner){
-    try{ if(addBarcodeScanner.isScanning) await addBarcodeScanner.stop(); }catch(e){}
-    try{ addBarcodeScanner.clear(); }catch(e){}
-    addBarcodeScanner=null;
-  }
-  const reader=document.getElementById('addBarcodeReader');
-  if(reader) reader.classList.add('hidden');
-}
-'''
-              idx = s.find('function startBarcodeScanner(){')
-              if idx == -1:
-                  raise SystemExit('Existing edit scanner function not found')
-              s = s[:idx] + funcs + s[idx:]
-
-              if 'async function addProduct(' in s and 'await stopAddBarcodeScanner();' not in s[s.find('async function addProduct('):s.find('async function addProduct(')+500]:
-                  s = s.replace('async function addProduct(){', 'async function addProduct(){\n  await stopAddBarcodeScanner();', 1)
-
-              p.write_text(s, encoding='utf-8')
+          p=Path('admin.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('async async function startAddBarcodeScanner(){','async function startAddBarcodeScanner(){')
+          p.write_text(s,encoding='utf-8')
           PY
-
           git diff --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add admin.html
-          if git diff --cached --quiet; then
-            echo 'No changes needed'
-            exit 0
-          fi
-          git commit -m 'fix: add barcode scanner to add product form'
+          if git diff --cached --quiet; then echo 'No changes needed'; exit 0; fi
+          git commit -m 'fix: correct add product scanner syntax'
           git push
