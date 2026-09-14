@@ -109,3 +109,19 @@ window.MAISON_SUPABASE = {
     }
   } catch (e) { console.warn('PWA setup failed', e); }
 })();
+
+// Load the product image picker only on the Admin page.
+(function () {
+  const path = location.pathname + location.search + location.hash;
+  if (!/\/admin(?:\.html)?(?:$|[?#])/.test(path)) return;
+  const load = () => {
+    if (document.getElementById('matAdminImageUploadScript')) return;
+    const s = document.createElement('script');
+    s.id = 'matAdminImageUploadScript';
+    s.src = '/admin-image-upload.js?v=1';
+    s.async = true;
+    document.head.appendChild(s);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load);
+  else load();
+})();
