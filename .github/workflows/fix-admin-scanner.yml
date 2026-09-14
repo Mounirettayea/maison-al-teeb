@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Repair Add Product scanner
         shell: bash
         run: |
@@ -24,21 +23,12 @@ jobs:
           p = Path('admin.html')
           s = p.read_text(encoding='utf-8')
 
-          # Remove the old scanner implementations used by the Add Product form.
-          # The previous workflow used over-escaped regexes, so duplicates were
-          # never actually removed.
-          s = re.sub(
-              r'<button\b[^>]*(?:onclick\s*=\s*["\'](?:async\s+)?startBarcodeScanner\s*\(\s*\)["\']|onclick\s*=\s*["\'](?:async\s+)?startAddBarcodeScanner\s*\(\s*\)["\'])[^>]*>.*?</button>',
-              '', s, flags=re.I | re.S
-          )
-
-          # Remove old scanner functions so only the new implementation remains.
+          # Remove old Add Product scanner buttons and functions.
+          s = re.sub(r'<button\b[^>]*(?:onclick\s*=\s*["\'](?:async\s+)?(?:startBarcodeScanner|startAddBarcodeScanner)\s*\([^)]*\)["\'])[^>]*>.*?</button>', '', s, flags=re.I | re.S)
           for name in ('startBarcodeScanner', 'startAddBarcodeScanner'):
-              pattern = re.compile(
-                  rf'(?:async\s+)?function\s+{name}\s*\([^)]*\)\s*\{{', re.I
-              )
+              rx = re.compile(r'(?:async\s+)?function\s+' + name + r'\s*\([^)]*\)\s*\{', re.I)
               while True:
-                  m = pattern.search(s)
+                  m = rx.search(s)
                   if not m:
                       break
                   depth = 0
@@ -52,62 +42,40 @@ jobs:
                               end = i + 1
                               break
                   if end is None:
-                      raise SystemExit(f'Could not safely remove {name}')
+                      raise SystemExit('Could not remove scanner function safely')
                   s = s[:m.start()] + s[end:]
 
-          # Make sure the scanner library is available before the page scripts run.
-          s = s.replace(
-              '<script src="https://unpkg.com/html5-qrcode" defer></script>',
-              '<script src="https://unpkg.com/html5-qrcode"></script>'
-          )
-
-          # Remove previously injected scanner markup, if any.
+          s = s.replace('<script src="https://unpkg.com/html5-qrcode" defer></script>', '<script src="https://unpkg.com/html5-qrcode"></script>')
           s = re.sub(r'<div[^>]*id=["\']addBarcodeStatus["\'][^>]*>.*?</div>', '', s, flags=re.I | re.S)
           s = re.sub(r'<div[^>]*id=["\']addBarcodeReader["\'][^>]*>.*?</div>', '', s, flags=re.I | re.S)
           s = re.sub(r'<button[^>]*id=["\']startAddBarcodeScannerBtn["\'][^>]*>.*?</button>', '', s, flags=re.I | re.S)
 
-          # Find the barcode input in the Add Product form and attach exactly one scanner.
-          barcode = re.compile(r'<input\b(?=[^>]*\bid=["\']barcode["\'])[^>]*>', re.I | re.S)
-          m = barcode.search(s)
+          m = re.search(r'<input\b(?=[^>]*\bid=["\']barcode["\'])[^>]*>', s, re.I | re.S)
           if not m:
               raise SystemExit('Barcode input not found in admin.html')
 
-          controls = '''
-          <button type="button" id="startAddBarcodeScannerBtn" class="btn gold" onclick="startAddBarcodeScanner()">📷 Scanner</button>
-          <div id="addBarcodeStatus" class="scanner-status">اضغط Scanner لفتح الكاميرا وقراءة Barcode</div>
-          <div id="addBarcodeReader" class="barcode-reader hidden"></div>'''
+          controls = '\n<button type="button" id="startAddBarcodeScannerBtn" class="btn gold" onclick="startAddBarcodeScanner()">📷 Scanner</button>\n<div id="addBarcodeStatus" class="scanner-status">اضغط Scanner لفتح الكاميرا وقراءة Barcode</div>\n<div id="addBarcodeReader" class="barcode-reader hidden"></div>'
           s = s[:m.end()] + controls + s[m.end():]
 
-          # Add one clean implementation immediately before </body>.
-          scanner_js = '''
-          <script>
+          scanner = '''<script>
           let addBarcodeScanner = null;
-
           async function startAddBarcodeScanner() {
             const reader = document.getElementById('addBarcodeReader');
             const status = document.getElementById('addBarcodeStatus');
             const input = document.getElementById('barcode');
-
-            if (!reader || !input) {
-              alert('Scanner: champ Barcode introuvable');
-              return;
-            }
+            if (!reader || !input) return alert('Scanner: champ Barcode introuvable');
             if (typeof Html5Qrcode === 'undefined') {
               if (status) status.textContent = 'Scanner غير متاح. حدّث الصفحة وحاول من جديد.';
               return;
             }
-
             try {
               if (addBarcodeScanner) {
                 try { await addBarcodeScanner.stop(); } catch (_) {}
                 try { await addBarcodeScanner.clear(); } catch (_) {}
-                addBarcodeScanner = null;
               }
-
               reader.classList.remove('hidden');
               if (status) status.textContent = 'وجه الكاميرا نحو Barcode...';
               addBarcodeScanner = new Html5Qrcode('addBarcodeReader');
-
               await addBarcodeScanner.start(
                 { facingMode: { exact: 'environment' } },
                 { fps: 10, qrbox: { width: 280, height: 140 } },
@@ -123,13 +91,12 @@ jobs:
                 },
                 () => {}
               );
-            } catch (err) {
+            } catch (_) {
               if (status) status.textContent = 'ما قدرناش نفتحو الكاميرا. عطِ صلاحية Camera للمتصفح وحاول من جديد.';
               try { if (addBarcodeScanner) await addBarcodeScanner.clear(); } catch (_) {}
               addBarcodeScanner = null;
             }
           }
-
           function stopAddBarcodeScanner() {
             if (addBarcodeScanner) {
               addBarcodeScanner.stop().catch(() => {});
@@ -139,9 +106,9 @@ jobs:
             const reader = document.getElementById('addBarcodeReader');
             if (reader) reader.classList.add('hidden');
           }
-          </script>
-          '''
-          s = s.replace('</body>', scanner_js + '\n</body>', 1)
+          </script>'''
+          scanner = '\n'.join(line.rstrip() for line in scanner.splitlines())
+          s = s.replace('</body>', scanner + '\n</body>', 1)
 
           if s.count('id="startAddBarcodeScannerBtn"') != 1:
               raise SystemExit('Scanner button count is not 1')
@@ -150,10 +117,11 @@ jobs:
           if s.count('function startAddBarcodeScanner()') != 1:
               raise SystemExit('Scanner function count is not 1')
 
+          # Remove trailing whitespace introduced by the generated markup.
+          s = '\n'.join(line.rstrip() for line in s.split('\n'))
           p.write_text(s, encoding='utf-8')
           PY
 
-          git diff --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add admin.html
