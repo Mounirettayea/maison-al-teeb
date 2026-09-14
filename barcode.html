@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MAISON AL TEEB — Barcode Manager</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="/supabase-config.js"></script>
+<style>
+:root{--g:#0e291b;--gold:#d4af37;--bg:#f7f4ee;--card:#fff;--line:#e4ddcf;--muted:#68716b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#18231d;font-family:Tajawal,Arial,sans-serif}.top{background:var(--g);color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center}.brand{color:var(--gold);font:700 21px Georgia,serif}.wrap{max-width:760px;margin:auto;padding:20px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 8px 25px #00000008}h1{margin:0 0 6px;font-size:25px}.sub{color:var(--muted);font-size:13px}label{display:block;font-size:13px;font-weight:700;margin:16px 0 7px}select,input{width:100%;padding:13px;border:1px solid #d8d0c1;border-radius:11px;background:#fff;font:inherit}.row{display:flex;gap:9px}.row>*{flex:1}.btn{border:0;border-radius:11px;padding:12px 15px;font:inherit;font-weight:700;cursor:pointer}.primary{background:var(--g);color:#fff}.secondary{background:#eee9df}.gold{background:var(--gold);color:#151a13}.reader{margin-top:15px;border-radius:14px;overflow:hidden;background:#111;min-height:230px}.msg{display:none;margin-top:12px;padding:11px;border-radius:10px}.ok{display:block;background:#e8f5ed;color:#24603e}.err{display:block;background:#fbeaea;color:#8e2c2c}.product{display:flex;gap:12px;align-items:center;padding:12px;background:#faf8f3;border-radius:12px;margin-top:14px}.product img{width:58px;height:58px;object-fit:cover;border-radius:10px}.product b{display:block}.product small{color:var(--muted)}.back{color:#fff;text-decoration:none;font-size:13px}@media(max-width:600px){.wrap{padding:12px}.row{flex-direction:column}}
+</style>
+</head>
+<body>
+<header class="top"><div class="brand">MAISON AL TEEB</div><a class="back" href="/admin.html">← Admin</a></header>
+<main class="wrap">
+<section class="card"><h1>🏷️ إضافة Barcode بسرعة</h1><div class="sub">اختار المنتج، سكان الباركود أو دخلو يدوياً، ومن بعد حفظ.</div>
+<label>المنتج</label><select id="product"><option value="">جاري تحميل المنتجات...</option></select>
+<div id="preview"></div>
+<label>Barcode</label><div class="row"><input id="barcode" inputmode="numeric" placeholder="سكان أو دخل رقم الباركود"><button class="btn secondary" onclick="startScan()">📷 سكان</button></div>
+<div class="actions row" style="margin-top:12px"><button class="btn primary" onclick="saveBarcode()">حفظ Barcode</button><button class="btn gold" onclick="generateBarcode()">توليد Barcode</button></div>
+<div id="msg" class="msg"></div></section>
+<section class="card"><h2 style="font-size:18px;margin-top:0">📷 سكان بالهاتف</h2><div class="sub">وجّه الكاميرا للباركود. ملي يتعرف عليه، غادي يتحط الرقم أوتوماتيكياً.</div><div id="reader" class="reader"></div><div style="margin-top:10px"><button class="btn secondary" onclick="stopScan()">إيقاف الكاميرا</button></div></section>
+</main>
+<script>
+const C=window.MAISON_SUPABASE||{};const sb=supabase.createClient(C.url||'https://mbjgirwuqzcjrllnokzj.supabase.co',C.anonKey||'',{auth:{persistSession:false}});let products=[],scanner=null;
+const $=id=>document.getElementById(id);
+function msg(t,err=false){$('msg').textContent=t;$('msg').className='msg '+(err?'err':'ok');$('msg').style.display='block';clearTimeout(window.mt);window.mt=setTimeout(()=>$('msg').style.display='none',3500)}
+async function load(){const {data,error}=await sb.from('products').select('id,name,name_fr,image,barcode,active').eq('active',true).order('name');if(error)return msg('خطأ: '+error.message,true);products=data||[];$('product').innerHTML='<option value="">اختار المنتج...</option>'+products.map(p=>`<option value="${p.id}">${esc(p.name_fr||p.name)}${p.barcode?' — '+esc(p.barcode):' — بدون Barcode'}</option>`).join('')}
+$('product').onchange=()=>{const p=products.find(x=>String(x.id)===$('product').value);$('barcode').value=p?.barcode||'';$('preview').innerHTML=p?`<div class="product">${p.image?`<img src="${esc(p.image)}">`:''}<div><b>${esc(p.name_fr||p.name)}</b><small>${p.barcode?'Barcode الحالي: '+esc(p.barcode):'مازال ما عندوش Barcode'}</small></div></div>`:''};
+async function saveBarcode(){const id=$('product').value,code=$('barcode').value.trim();if(!id)return msg('اختار المنتج أولاً.',true);if(!code)return msg('دخل أو سكان Barcode.',true);const {data:dup}=await sb.from('products').select('id,name').eq('barcode',code).neq('id',id).maybeSingle();if(dup)return msg('هاد Barcode مستعمل من طرف: '+(dup.name_fr||dup.name),true);const {error}=await sb.from('products').update({barcode:code}).eq('id',id);if(error)return msg('ما قدرناش نحفظو: '+error.message,true);const p=products.find(x=>String(x.id)===id);if(p)p.barcode=code;$('product').dispatchEvent(new Event('change'));msg('تم حفظ Barcode بنجاح ✓')}
+function generateBarcode(){const id=$('product').value;if(!id)return msg('اختار المنتج أولاً.',true);let code='200'+Date.now().toString().slice(-10);$('barcode').value=code;msg('تولد Barcode جديد — دير حفظ باش يتسجل.')}
+async function startScan(){if(scanner)return;scanner=new Html5Qrcode('reader');try{await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:280,height:150}},code=>{$('barcode').value=code;msg('تم التعرف على Barcode ✓');stopScan()});}catch(e){scanner=null;msg('تعذر تشغيل الكاميرا. تأكد من HTTPS وصلاحية الكاميرا.',true)}}
+async function stopScan(){if(!scanner)return;try{await scanner.stop();await scanner.clear()}catch(e){}scanner=null}
+function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+load();
+</script>
+</body></html>
