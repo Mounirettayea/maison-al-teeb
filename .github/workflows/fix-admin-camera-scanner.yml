@@ -1,0 +1,211 @@
+name: Fix admin camera scanner
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-admin-camera-scanner.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Replace admin scanner with reliable start/stop camera
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('admin.html')
+          s = p.read_text(encoding='utf-8')
+
+          # 1) Add explicit START/STOP controls to the edit-product barcode field.
+          old_edit = '''<div class="field"><label>Barcode</label><div class="barcode-tools"><input id="edit_barcode" inputmode="numeric" autocomplete="off"></div><div class="barcode-help">وجّه الكاميرا للـBarcode وخليه داخل الإطار.</div><div id="barcodeReader" class="barcode-reader hidden"><div id="barcodeReaderView"></div><div id="scannerStatus" class="scanner-status">جاري تشغيل الكاميرا...</div><button class="btn danger" type="button" onclick="stopBarcodeScanner()" style="margin:8px">✕ إيقاف السكان</button></div></div>'''
+          new_edit = '''<div class="field"><label>Barcode</label><div class="barcode-tools"><input id="edit_barcode" inputmode="numeric" autocomplete="off"><button type="button" id="startEditBarcodeScannerBtn" class="btn gold" onclick="startBarcodeScanner()">📷 تشغيل الكاميرا</button><button type="button" id="stopEditBarcodeScannerBtn" class="btn danger" onclick="stopBarcodeScanner()">✕ إيقاف</button></div><div class="barcode-help">اضغط تشغيل الكاميرا، ومن بعد وجّهها للـBarcode داخل الإطار.</div><div id="barcodeReader" class="barcode-reader hidden"><div id="barcodeReaderView"></div><div id="scannerStatus" class="scanner-status">الكاميرا متوقفة</div></div></div>'''
+          if old_edit in s:
+              s = s.replace(old_edit, new_edit, 1)
+
+          # 2) Replace the ADD-product scanner markup with one clean start/stop UI.
+          pattern_add = r'''<input id="barcode" inputmode="numeric" autocomplete="off" placeholder="Barcode">.*?<div class="barcode-help">وجّه الكاميرا للـBarcode وخليه داخل الإطار。</div>'''
+          replacement_add = '''<input id="barcode" inputmode="numeric" autocomplete="off" placeholder="Barcode"><button type="button" id="startAddBarcodeScannerBtn" class="btn gold" onclick="startAddBarcodeScanner()">📷 تشغيل الكاميرا</button><button type="button" id="stopAddBarcodeScannerBtn" class="btn danger" onclick="stopAddBarcodeScanner()">✕ إيقاف</button><div id="addBarcodeStatus" class="scanner-status">الكاميرا متوقفة — اضغط تشغيل الكاميرا</div><div id="addBarcodeReader" class="barcode-reader hidden"><div id="addBarcodeReaderView"></div></div><div class="barcode-help">وجّه الكاميرا للـBarcode وخليه داخل الإطار.</div>'''
+          # tolerate the normal Arabic full stop used by the current file
+          if not re.search(pattern_add, s, flags=re.S):
+              pattern_add = r'''<input id="barcode" inputmode="numeric" autocomplete="off" placeholder="Barcode">.*?<div class="barcode-help">وجّه الكاميرا للـBarcode وخليه داخل الإطار\.</div>'''
+          s = re.sub(pattern_add, replacement_add, s, count=1, flags=re.S)
+
+          # 3) Remove every previous add-scanner script and install one robust implementation.
+          s = re.sub(r'''\n<script>\s*let addBarcodeScanner\s*=\s*null;.*?</script>\s*</body>''', '\n</body>', s, count=1, flags=re.S)
+
+          robust = r'''<script>
+let addBarcodeScanner = null;
+let barcodeScanner = null;
+let addScannerBusy = false;
+let editScannerBusy = false;
+
+async function stopHtmlScanner(instance) {
+  if (!instance) return;
+  try { if (instance.isScanning) await instance.stop(); } catch (_) {}
+  try { await instance.clear(); } catch (_) {}
+}
+
+function setScannerButtonState(prefix, running) {
+  const start = document.getElementById(prefix + 'StartBarcodeScannerBtn');
+  const stop = document.getElementById(prefix + 'StopBarcodeScannerBtn');
+  if (start) start.disabled = running;
+  if (stop) stop.disabled = !running;
+}
+
+async function startCameraScanner({readerId, statusId, inputId, prefix, onDecoded}) {
+  const reader = document.getElementById(readerId);
+  const status = document.getElementById(statusId);
+  const input = document.getElementById(inputId);
+  if (!reader || !status || !input) throw new Error('Scanner UI introuvable');
+  if (typeof Html5Qrcode === 'undefined') throw new Error('قارئ الكاميرا غير متاح');
+
+  reader.classList.remove('hidden');
+  status.textContent = 'جاري تشغيل الكاميرا...';
+  setScannerButtonState(prefix, true);
+
+  let scanner = new Html5Qrcode(readerId);
+  const config = {fps: 10, qrbox: {width: 280, height: 140}, aspectRatio: 1.777};
+  const success = async decoded => {
+    if (!decoded) return;
+    await onDecoded(decoded, scanner, reader, status, input, prefix);
+  };
+
+  try {
+    // First choice: rear camera by facingMode. Do not use "exact" because it
+    // fails on some Android browsers/devices.
+    await scanner.start({facingMode: 'environment'}, config, success, () => {});
+  } catch (firstError) {
+    try {
+      // Fallback: enumerate cameras and prefer a camera whose label says back/rear/environment.
+      const cameras = await Html5Qrcode.getCameras();
+      if (!cameras || !cameras.length) throw firstError;
+      const back = cameras.find(c => /back|rear|environment|arrière|trasera|dorsal/i.test(c.label || '')) || cameras[cameras.length - 1];
+      await scanner.start(back.id, config, success, () => {});
+    } catch (secondError) {
+      await stopHtmlScanner(scanner);
+      setScannerButtonState(prefix, false);
+      reader.classList.add('hidden');
+      throw secondError || firstError;
+    }
+  }
+  return scanner;
+}
+
+async function startAddBarcodeScanner() {
+  if (addScannerBusy || addBarcodeScanner) return;
+  addScannerBusy = true;
+  const status = document.getElementById('addBarcodeStatus');
+  try {
+    addBarcodeScanner = await startCameraScanner({
+      readerId: 'addBarcodeReaderView', statusId: 'addBarcodeStatus', inputId: 'barcode', prefix: 'add',
+      onDecoded: async (decoded, scanner, reader, status, input, prefix) => {
+        input.value = String(decoded).trim();
+        input.dispatchEvent(new Event('input', {bubbles:true}));
+        input.dispatchEvent(new Event('change', {bubbles:true}));
+        status.textContent = 'تمت قراءة Barcode ✓';
+        await stopHtmlScanner(scanner);
+        addBarcodeScanner = null;
+        reader.classList.add('hidden');
+        setScannerButtonState(prefix, false);
+        addScannerBusy = false;
+      }
+    });
+    status.textContent = 'الكاميرا شغالة — وجّهها نحو Barcode';
+  } catch (e) {
+    addBarcodeScanner = null;
+    addScannerBusy = false;
+    if (status) status.textContent = 'تعذر تشغيل الكاميرا. سمح للمتصفح بالكاميرا وتأكد من HTTPS.';
+    setScannerButtonState('add', false);
+    console.error('ADD BARCODE SCANNER', e);
+  }
+}
+
+async function stopAddBarcodeScanner() {
+  addScannerBusy = false;
+  await stopHtmlScanner(addBarcodeScanner);
+  addBarcodeScanner = null;
+  const reader = document.getElementById('addBarcodeReader');
+  const status = document.getElementById('addBarcodeStatus');
+  if (reader) reader.classList.add('hidden');
+  if (status) status.textContent = 'الكاميرا متوقفة — اضغط تشغيل الكاميرا';
+  setScannerButtonState('add', false);
+}
+
+async function startBarcodeScanner() {
+  if (editScannerBusy || barcodeScanner) return;
+  editScannerBusy = true;
+  const status = document.getElementById('scannerStatus');
+  try {
+    barcodeScanner = await startCameraScanner({
+      readerId: 'barcodeReaderView', statusId: 'scannerStatus', inputId: 'edit_barcode', prefix: 'edit',
+      onDecoded: async (decoded, scanner, reader, status, input, prefix) => {
+        input.value = String(decoded).trim();
+        input.dispatchEvent(new Event('input', {bubbles:true}));
+        input.dispatchEvent(new Event('change', {bubbles:true}));
+        status.textContent = 'تمت قراءة Barcode ✓';
+        await stopHtmlScanner(scanner);
+        barcodeScanner = null;
+        reader.classList.add('hidden');
+        setScannerButtonState(prefix, false);
+        editScannerBusy = false;
+      }
+    });
+    if (status) status.textContent = 'الكاميرا شغالة — وجّهها نحو Barcode';
+  } catch (e) {
+    barcodeScanner = null;
+    editScannerBusy = false;
+    if (status) status.textContent = 'تعذر تشغيل الكاميرا. سمح للمتصفح بالكاميرا وتأكد من HTTPS.';
+    setScannerButtonState('edit', false);
+    console.error('EDIT BARCODE SCANNER', e);
+  }
+}
+
+async function stopBarcodeScanner() {
+  editScannerBusy = false;
+  await stopHtmlScanner(barcodeScanner);
+  barcodeScanner = null;
+  const reader = document.getElementById('barcodeReader');
+  const status = document.getElementById('scannerStatus');
+  if (reader) reader.classList.add('hidden');
+  if (status) status.textContent = 'الكاميرا متوقفة';
+  setScannerButtonState('edit', false);
+}
+
+window.addEventListener('pagehide', () => {
+  stopAddBarcodeScanner();
+  stopBarcodeScanner();
+});
+</script>
+</body>'''
+
+          if '</body>' in s:
+              s = s.replace('</body>', robust, 1)
+          else:
+              s += robust
+
+          # Fix the mobile scanner controls so they stay usable side-by-side when possible.
+          s = s.replace('.barcode-tools{flex-direction:column;align-items:stretch}.barcode-tools .btn{width:100%}', '.barcode-tools{flex-direction:column;align-items:stretch}.barcode-tools .btn{width:100%}')
+
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit admin scanner fix
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add admin.html
+          if git diff --cached --quiet; then
+            echo 'No admin changes needed'
+            exit 0
+          fi
+          git commit -m 'fix: reliable admin camera start stop scanner'
+          git push
