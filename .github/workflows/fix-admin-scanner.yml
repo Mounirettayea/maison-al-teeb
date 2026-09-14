@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Keep one scanner and remove duplicate
+      - name: Keep one working Add Product scanner
         shell: bash
         run: |
           python3 - <<'PY'
@@ -23,17 +23,17 @@ jobs:
           p = Path('admin.html')
           s = p.read_text(encoding='utf-8')
 
-          # The newly added Add Product scanner is the one we keep.
-          # Remove the old Edit Product scanner button(s) that call startBarcodeScanner().
+          # Remove every old button that calls the duplicate scanner.
           s = re.sub(
-              r'<button\\b[^>]*onclick=["\']startBarcodeScanner\\(\\)["\'][^>]*>.*?</button>',
+              r'<button\b[^>]*onclick=["\'](?:async\s+)?startBarcodeScanner\(\)["\'][^>]*>.*?</button>',
               '', s, flags=re.I | re.S
           )
 
-          # Remove the old startBarcodeScanner() function safely by matching braces.
-          marker = 'function startBarcodeScanner(){'
-          pos = s.find(marker)
-          if pos != -1:
+          # Remove the old scanner function, whether it is declared async or not.
+          for marker in ('async function startBarcodeScanner(){', 'function startBarcodeScanner(){'):
+              pos = s.find(marker)
+              if pos == -1:
+                  continue
               depth = 0
               end = None
               for i in range(pos + len(marker) - 1, len(s)):
@@ -49,19 +49,20 @@ jobs:
                   raise SystemExit('Could not safely remove old scanner function')
               s = s[:pos] + s[end:]
 
-          # Make sure exactly one scanner implementation remains.
-          if s.count('startAddBarcodeScanner') < 1:
-              raise SystemExit('Kept scanner function is missing')
-          if 'startBarcodeScanner' in s:
-              raise SystemExit('Old duplicate scanner still exists')
+          # The Add Product scanner must be the only scanner implementation.
+          if 'function startAddBarcodeScanner()' not in s:
+              raise SystemExit('Add Product scanner function is missing')
           if 'id="addBarcodeReader"' not in s:
-              raise SystemExit('Kept scanner UI is missing')
+              raise SystemExit('Add Product scanner UI is missing')
+          if 'startBarcodeScanner' in s:
+              raise SystemExit('Duplicate old scanner still exists')
 
           p.write_text(s, encoding='utf-8')
           PY
 
           git diff --check
-          grep -q 'startAddBarcodeScanner' admin.html
+          grep -q 'function startAddBarcodeScanner()' admin.html
+          grep -q 'id="addBarcodeReader"' admin.html
           ! grep -q 'startBarcodeScanner' admin.html
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
