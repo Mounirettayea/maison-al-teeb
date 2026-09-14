@@ -1,0 +1,146 @@
+name: Fix Add Product Barcode Scanner
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-admin-scanner.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch admin scanner
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path('admin.html')
+          s = p.read_text(encoding='utf-8')
+
+          old_html = '''<div class="searchbar" style="grid-template-columns:1fr 1fr">
+            <input id="name" required placeholder="اسم المنتج *">
+            <input id="barcode" placeholder="Barcode">
+          </div>'''
+          new_html = '''<div class="searchbar" style="grid-template-columns:1fr 1fr">
+            <input id="name" required placeholder="اسم المنتج *">
+            <div>
+              <div class="barcode-tools">
+                <input id="barcode" inputmode="numeric" autocomplete="off" placeholder="Barcode">
+                <button class="btn dark" type="button" onclick="startAddBarcodeScanner()">📷 سكان</button>
+              </div>
+              <div class="barcode-help">وجّه الكاميرا للـBarcode وخليه داخل الإطار.</div>
+              <div id="addBarcodeReader" class="barcode-reader hidden">
+                <div id="addBarcodeReaderView"></div>
+                <div id="addScannerStatus" class="scanner-status">جاري تشغيل الكاميرا...</div>
+                <button class="btn danger" type="button" onclick="stopAddBarcodeScanner()" style="margin:8px">✕ إيقاف السكان</button>
+              </div>
+            </div>
+          </div>'''
+          if old_html not in s:
+              raise SystemExit('Add Product barcode block not found')
+          s = s.replace(old_html, new_html, 1)
+
+          old_vars = 'let products=[],orders=[],orderItems=[],barcodeScanner=null;'
+          new_vars = 'let products=[],orders=[],orderItems=[],barcodeScanner=null,addBarcodeScanner=null;'
+          if old_vars not in s:
+              raise SystemExit('JS state declaration not found')
+          s = s.replace(old_vars, new_vars, 1)
+
+          marker = 'function startBarcodeScanner(){'
+          pos = s.find(marker)
+          if pos < 0:
+              raise SystemExit('Existing scanner function not found')
+
+          add_scanner = r'''async function startAddBarcodeScanner(){
+            if(!window.Html5Qrcode){
+              flash('السكانر مازال كيتحمل، عاود ضغط سكان بعد لحظة.',true);
+              return;
+            }
+            if(!window.isSecureContext && location.hostname!=='localhost'){
+              $('addScannerStatus').textContent='الكاميرا كتحتاج HTTPS. افتح الموقع عبر HTTPS.';
+              flash('الكاميرا كتحتاج HTTPS باش تخدم.',true);
+              return;
+            }
+            await stopAddBarcodeScanner();
+            $('addBarcodeReader').classList.remove('hidden');
+            $('addScannerStatus').textContent='جاري تشغيل الكاميرا...';
+            addBarcodeScanner=new Html5Qrcode('addBarcodeReaderView');
+            try{
+              const config={
+                fps:10,
+                qrbox:{width:280,height:140},
+                aspectRatio:1.777,
+                formatsToSupport:[
+                  Html5QrcodeSupportedFormats.EAN_13,
+                  Html5QrcodeSupportedFormats.EAN_8,
+                  Html5QrcodeSupportedFormats.UPC_A,
+                  Html5QrcodeSupportedFormats.UPC_E,
+                  Html5QrcodeSupportedFormats.CODE_128,
+                  Html5QrcodeSupportedFormats.CODE_39,
+                  Html5QrcodeSupportedFormats.ITF
+                ]
+              };
+              await addBarcodeScanner.start(
+                {facingMode:{ideal:'environment'}},
+                config,
+                async decodedText=>{
+                  const code=String(decodedText||'').trim();
+                  if(!code)return;
+                  $('barcode').value=code;
+                  $('addScannerStatus').textContent='تم التقاط Barcode: '+code;
+                  flash('تم سكان الـBarcode بنجاح ✅');
+                  await stopAddBarcodeScanner();
+                  $('barcode').focus();
+                },
+                ()=>{}
+              );
+            }catch(err){
+              console.error(err);
+              $('addScannerStatus').textContent='تعذر تشغيل الكاميرا. تأكد من HTTPS وصلاحية Camera.';
+              flash('ما قدرناش نشغلو الكاميرا. سمح للموقع باستعمال الكاميرا.',true);
+              await stopAddBarcodeScanner();
+            }
+          }
+          async function stopAddBarcodeScanner(){
+            if(addBarcodeScanner){
+              try{ if(addBarcodeScanner.isScanning) await addBarcodeScanner.stop(); }catch(e){}
+              try{ await addBarcodeScanner.clear(); }catch(e){}
+              addBarcodeScanner=null;
+            }
+            $('addBarcodeReader')?.classList.add('hidden');
+          }
+
+          '''
+          s = s[:pos] + add_scanner + s[pos:]
+
+          old_add = 'async function addProduct(e){\n  e.preventDefault();'
+          new_add = 'async function addProduct(e){\n  e.preventDefault();\n  await stopAddBarcodeScanner();'
+          if old_add in s:
+              s = s.replace(old_add, new_add, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin.html
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "fix: make add product barcode scanner work"
+          git push
+
+      - name: Remove temporary workflow
+        if: success()
+        run: |
+          rm -f .github/workflows/fix-admin-scanner.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: remove temporary scanner fix workflow"
+          git push
