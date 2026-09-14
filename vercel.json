@@ -5,6 +5,7 @@
     { "source": "/scanner.html", "destination": "/scanner.html" },
     { "source": "/admin.html", "destination": "/admin.html" },
     { "source": "/stock.html", "destination": "/stock.html" },
-    { "source": "/gestion-stock.html", "destination": "/gestion-stock.html" }
+    { "source": "/gestion-stock.html", "destination": "/gestion-stock.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
