@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { AppLayout } from './components/layout/AppLayout'
 import { Dashboard } from './pages/admin/Dashboard'
 import { Products } from './pages/products/Products'
@@ -11,23 +11,27 @@ import { Settings } from './pages/settings/Settings'
 import { StoreHome } from './pages/store/StoreHome'
 import './styles/app.css'
 
+function pageFor(pathname: string) {
+  if (pathname === '/') return <StoreHome />
+  if (pathname === '/pos') return <POS />
+  if (pathname === '/admin/produits') return <Products />
+  if (pathname === '/admin/stock') return <Stock />
+  if (pathname === '/admin/ventes') return <Sales />
+  if (pathname === '/admin/clients') return <Customers />
+  if (pathname === '/admin/rapports') return <Reports />
+  if (pathname === '/admin/parametres') return <Settings />
+  return <Dashboard />
+}
+
 export default function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<StoreHome />} />
-        <Route element={<AppLayout />}>
-          <Route path="/admin" element={<Dashboard />} />
-          <Route path="/admin/produits" element={<Products />} />
-          <Route path="/admin/stock" element={<Stock />} />
-          <Route path="/admin/ventes" element={<Sales />} />
-          <Route path="/admin/clients" element={<Customers />} />
-          <Route path="/admin/rapports" element={<Reports />} />
-          <Route path="/admin/parametres" element={<Settings />} />
-          <Route path="/pos" element={<POS />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/admin" replace />} />
-      </Routes>
-    </BrowserRouter>
-  )
+  const [path, setPath] = useState(window.location.pathname)
+
+  useEffect(() => {
+    const onPopState = () => setPath(window.location.pathname)
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  if (path === '/') return pageFor(path)
+  return <AppLayout>{pageFor(path)}</AppLayout>
 }
