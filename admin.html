@@ -77,11 +77,7 @@ function renderOrders(){if(!$('ordersBody'))return;const q=($('orderSearch').val
 async function addProduct(e){e.preventDefault();const row={name:$('name').value.trim(),barcode:$('barcode').value.trim()||null,name_fr:$('name_fr').value.trim()||null,name_en:$('name_en').value.trim()||null,category:$('category').value,size:$('size').value.trim()||null,price:Number($('price').value),stock:Math.max(0,Number($('stock_new').value)||0),low_stock_threshold:Math.max(0,Number($('threshold_new').value)||5),image:$('image_url').value.trim()||null,active:true};const {error}=await db.from('products').insert(row);if(error){flash(error.message,true);return}flash('تمت إضافة المنتج بنجاح ✅');$('addForm').reset();$('stock_new').value=0;$('threshold_new').value=5;await loadDashboard();go('products')}
 lucide.createIcons();
 </script>
-<script>
-let addBarcodeScanner = null;
 
-
-</script>
 <script>
 let addBarcodeScanner = null;
 async function startAddBarcodeScanner() {
