@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Keep one working Add Product scanner
+      - name: Repair Add Product scanner
         shell: bash
         run: |
           python3 - <<'PY'
@@ -23,53 +23,55 @@ jobs:
           p = Path('admin.html')
           s = p.read_text(encoding='utf-8')
 
-          # Remove every old button that calls the duplicate scanner.
-          s = re.sub(
-              r'<button\b[^>]*onclick=["\'](?:async\s+)?startBarcodeScanner\(\)["\'][^>]*>.*?</button>',
-              '', s, flags=re.I | re.S
-          )
+          # Fix the old syntax error if it is still present. A syntax error here
+          # prevents the entire admin/login script from running.
+          s = s.replace('function startBarcodeScanner(){', 'async function startBarcodeScanner(){')
 
-          # Remove the old scanner function, whether it is declared async or not.
+          # Remove the old duplicate scanner button and function.
+          s = re.sub(r'<button\\b[^>]*onclick=["\'](?:async\\s+)?startBarcodeScanner\\(\\)["\'][^>]*>.*?</button>', '', s, flags=re.I|re.S)
           for marker in ('async function startBarcodeScanner(){', 'function startBarcodeScanner(){'):
-              pos = s.find(marker)
-              if pos == -1:
-                  continue
-              depth = 0
-              end = None
-              for i in range(pos + len(marker) - 1, len(s)):
-                  ch = s[i]
-                  if ch == '{':
-                      depth += 1
-                  elif ch == '}':
-                      depth -= 1
-                      if depth == 0:
-                          end = i + 1
-                          break
-              if end is None:
-                  raise SystemExit('Could not safely remove old scanner function')
-              s = s[:pos] + s[end:]
+              while marker in s:
+                  pos = s.find(marker)
+                  depth = 0
+                  end = None
+                  for i in range(pos + len(marker) - 1, len(s)):
+                      if s[i] == '{': depth += 1
+                      elif s[i] == '}':
+                          depth -= 1
+                          if depth == 0:
+                              end = i + 1
+                              break
+                  if end is None: raise SystemExit('Cannot remove duplicate scanner function')
+                  s = s[:pos] + s[end:]
 
-          # The Add Product scanner must be the only scanner implementation.
+          # Ensure the scanner library is loaded reliably.
+          s = s.replace('<script src="https://unpkg.com/html5-qrcode" defer></script>', '<script src="https://unpkg.com/html5-qrcode"></script>')
+
+          # Add one simple, robust scanner implementation if missing.
           if 'function startAddBarcodeScanner()' not in s:
-              raise SystemExit('Add Product scanner function is missing')
-          if 'id="addBarcodeReader"' not in s:
-              raise SystemExit('Add Product scanner UI is missing')
-          if 'startBarcodeScanner' in s:
-              raise SystemExit('Duplicate old scanner still exists')
+              scanner_js = r'''\n<script>\nlet addBarcodeScanner=null;\nasync function startAddBarcodeScanner(){\n  const reader=document.getElementById('addBarcodeReader');\n  const status=document.getElementById('addBarcodeStatus');\n  const input=document.getElementById('barcode');\n  if(!reader||!input){alert('Scanner: champ Barcode introuvable');return;}\n  if(typeof Html5Qrcode==='undefined'){if(status)status.textContent='Scanner غير متاح. حدّث الصفحة وحاول من جديد.';return;}\n  try{\n    if(addBarcodeScanner){try{await addBarcodeScanner.stop();}catch(e){} addBarcodeScanner=null;}\n    reader.classList.remove('hidden');\n    if(status)status.textContent='وجه الكاميرا نحو Barcode...';\n    addBarcodeScanner=new Html5Qrcode('addBarcodeReader');\n    await addBarcodeScanner.start({facingMode:'environment'},{fps:10,qrbox:{width:280,height:140}},async decoded=>{\n      input.value=decoded;\n      input.dispatchEvent(new Event('input',{bubbles:true}));\n      if(status)status.textContent='تم قراءة Barcode: '+decoded;\n      try{await addBarcodeScanner.stop();}catch(e){}\n      addBarcodeScanner=null;\n      reader.classList.add('hidden');\n    },()=>{});\n  }catch(err){\n    if(status)status.textContent='ما قدرناش نفتحو الكاميرا. عطِ صلاحية Camera للمتصفح وحاول من جديد.';\n    try{if(addBarcodeScanner)await addBarcodeScanner.clear();}catch(e){}\n    addBarcodeScanner=null;\n  }\n}\nfunction stopAddBarcodeScanner(){if(addBarcodeScanner){addBarcodeScanner.stop().catch(()=>{});addBarcodeScanner=null;} const r=document.getElementById('addBarcodeReader'); if(r)r.classList.add('hidden');}\n</script>\n'''
+              s=s.replace('</body>', scanner_js+'</body>')
 
-          p.write_text(s, encoding='utf-8')
+          # Add the single scanner button/status beside the Add Product barcode input.
+          if 'id="startAddBarcodeScannerBtn"' not in s:
+              pat=r'(<input[^>]*id=["\']barcode["\'][^>]*>)'
+              repl=r'''\1\n<button type="button" id="startAddBarcodeScannerBtn" class="btn gold" onclick="startAddBarcodeScanner()">📷 Scanner</button>\n<div id="addBarcodeStatus" class="scanner-status">اضغط Scanner لفتح الكاميرا وقراءة Barcode</div>\n<div id="addBarcodeReader" class="barcode-reader hidden"></div>'''
+              s,n=re.subn(pat,repl,s,count=1,flags=re.I)
+              if n==0: raise SystemExit('Barcode input not found')
+
+          # Remove any duplicate Add Product scanner buttons/readers, keeping the first.
+          s=re.sub(r'(<button[^>]*id=["\']startAddBarcodeScannerBtn["\'][^>]*>.*?</button>)(?:\\s*<button[^>]*id=["\']startAddBarcodeScannerBtn["\'][^>]*>.*?</button>)+', r'\1', s, flags=re.I|re.S)
+
+          if s.count('id="startAddBarcodeScannerBtn"') != 1: raise SystemExit('Scanner button count is not 1')
+          if s.count('function startAddBarcodeScanner()') != 1: raise SystemExit('Scanner function count is not 1')
+          if 'startBarcodeScanner' in s: raise SystemExit('Old scanner still exists')
+
+          p.write_text(s,encoding='utf-8')
           PY
-
           git diff --check
-          grep -q 'function startAddBarcodeScanner()' admin.html
-          grep -q 'id="addBarcodeReader"' admin.html
-          ! grep -q 'startBarcodeScanner' admin.html
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add admin.html
-          if git diff --cached --quiet; then
-            echo 'No changes needed'
-            exit 0
-          fi
-          git commit -m 'fix: keep one working barcode scanner'
+          if git diff --cached --quiet; then echo 'No admin changes needed'; exit 0; fi
+          git commit -m 'fix: make add product barcode scanner work'
           git push
