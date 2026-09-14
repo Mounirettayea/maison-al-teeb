@@ -1,0 +1,143 @@
+name: Finalize admin scanner
+
+on:
+  push:
+    paths:
+      - '.github/workflows/finalize-admin-scanner.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Finalize scanner markup and functions
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('admin.html')
+          s = p.read_text(encoding='utf-8')
+
+          # Remove leftover markup from the previous scanner implementation.
+          s = re.sub(r'\s*<div[^>]*id=["\']addScannerStatus["\'][^>]*>.*?</div>', '', s, flags=re.I | re.S)
+          s = re.sub(r'\s*<button[^>]*onclick=["\'][^"\']*stopAddBarcodeScanner\s*\([^)]*\)["\'][^>]*>.*?</button>', '', s, flags=re.I | re.S)
+          s = re.sub(r'\s*<div[^>]*id=["\']addBarcodeReaderView["\'][^>]*>.*?</div>', '', s, flags=re.I | re.S)
+
+          # Keep exactly one scanner reader and one scanner button.
+          reader = '<div id="addBarcodeReader" class="barcode-reader hidden"></div>'
+          button = '<button type="button" id="startAddBarcodeScannerBtn" class="btn gold" onclick="startAddBarcodeScanner()">📷 Scanner</button>'
+          status = '<div id="addBarcodeStatus" class="scanner-status">اضغط Scanner لفتح الكاميرا وقراءة Barcode</div>'
+          s = re.sub(r'<div[^>]*id=["\']addBarcodeReader["\'][^>]*>.*?</div>', '', s, flags=re.I | re.S)
+          s = re.sub(r'<button[^>]*id=["\']startAddBarcodeScannerBtn["\'][^>]*>.*?</button>', '', s, flags=re.I | re.S)
+          s = re.sub(r'<div[^>]*id=["\']addBarcodeStatus["\'][^>]*>.*?</div>', '', s, flags=re.I | re.S)
+
+          m = re.search(r'<input\b(?=[^>]*\bid=["\']barcode["\'])[^>]*>', s, re.I | re.S)
+          if not m:
+              raise SystemExit('Barcode input not found')
+          s = s[:m.end()] + '\n' + button + '\n' + status + '\n' + reader + s[m.end():]
+
+          # Remove every old stopAddBarcodeScanner function, then add one clean implementation.
+          def remove_function(text, name):
+              rx = re.compile(r'(?:async\s+)?function\s+' + name + r'\s*\([^)]*\)\s*\{', re.I)
+              while True:
+                  m = rx.search(text)
+                  if not m:
+                      return text
+                  depth = 0
+                  end = None
+                  for i in range(m.end() - 1, len(text)):
+                      if text[i] == '{':
+                          depth += 1
+                      elif text[i] == '}':
+                          depth -= 1
+                          if depth == 0:
+                              end = i + 1
+                              break
+                  if end is None:
+                      raise SystemExit('Could not remove ' + name)
+                  text = text[:m.start()] + text[end:]
+
+          s = remove_function(s, 'startAddBarcodeScanner')
+          s = remove_function(s, 'stopAddBarcodeScanner')
+
+          scanner = '''<script>
+          let addBarcodeScanner = null;
+          async function startAddBarcodeScanner() {
+            const reader = document.getElementById('addBarcodeReader');
+            const status = document.getElementById('addBarcodeStatus');
+            const input = document.getElementById('barcode');
+            if (!reader || !input) return alert('Scanner: champ Barcode introuvable');
+            if (typeof Html5Qrcode === 'undefined') {
+              if (status) status.textContent = 'Scanner غير متاح. حدّث الصفحة وحاول من جديد.';
+              return;
+            }
+            try {
+              if (addBarcodeScanner) {
+                try { await addBarcodeScanner.stop(); } catch (_) {}
+                try { await addBarcodeScanner.clear(); } catch (_) {}
+              }
+              reader.classList.remove('hidden');
+              if (status) status.textContent = 'وجه الكاميرا نحو Barcode...';
+              addBarcodeScanner = new Html5Qrcode('addBarcodeReader');
+              await addBarcodeScanner.start(
+                { facingMode: { exact: 'environment' } },
+                { fps: 10, qrbox: { width: 280, height: 140 } },
+                async decoded => {
+                  input.value = decoded;
+                  input.dispatchEvent(new Event('input', { bubbles: true }));
+                  input.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (status) status.textContent = 'تم قراءة Barcode: ' + decoded;
+                  try { await addBarcodeScanner.stop(); } catch (_) {}
+                  try { await addBarcodeScanner.clear(); } catch (_) {}
+                  addBarcodeScanner = null;
+                  reader.classList.add('hidden');
+                },
+                () => {}
+              );
+            } catch (_) {
+              if (status) status.textContent = 'ما قدرناش نفتحو الكاميرا. عطِ صلاحية Camera للمتصفح وحاول من جديد.';
+              try { if (addBarcodeScanner) await addBarcodeScanner.clear(); } catch (_) {}
+              addBarcodeScanner = null;
+              reader.classList.add('hidden');
+            }
+          }
+          function stopAddBarcodeScanner() {
+            if (addBarcodeScanner) {
+              addBarcodeScanner.stop().catch(() => {});
+              addBarcodeScanner.clear().catch(() => {});
+              addBarcodeScanner = null;
+            }
+            const reader = document.getElementById('addBarcodeReader');
+            if (reader) reader.classList.add('hidden');
+          }
+          </script>'''
+          scanner = '\n'.join(line.rstrip() for line in scanner.splitlines())
+          s = s.replace('</body>', scanner + '\n</body>', 1)
+          s = '\n'.join(line.rstrip() for line in s.split('\n'))
+
+          if s.count('id="startAddBarcodeScannerBtn"') != 1:
+              raise SystemExit('Expected exactly one scanner button')
+          if s.count('id="addBarcodeReader"') != 1:
+              raise SystemExit('Expected exactly one scanner reader')
+          if s.count('function startAddBarcodeScanner()') != 1:
+              raise SystemExit('Expected exactly one scanner function')
+          if s.count('function stopAddBarcodeScanner()') != 1:
+              raise SystemExit('Expected exactly one stop function')
+
+          p.write_text(s, encoding='utf-8')
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add admin.html
+          if git diff --cached --quiet; then
+            echo 'No admin changes needed'
+            exit 0
+          fi
+          git commit -m 'fix: finalize single working admin barcode scanner'
+          git push
