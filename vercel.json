@@ -1,12 +1,13 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": false,
-  "rewrites": [
-    { "source": "/", "destination": "https://maisonalteeb-1n30roo0o-maison-al-teeb.vercel.app/" },
-    { "source": "/caissiere.html", "destination": "/caissiere.html" },
-    { "source": "/scanner.html", "destination": "/scanner.html" },
-    { "source": "/admin.html", "destination": "/admin.html" },
-    { "source": "/stock.html", "destination": "/stock.html" },
-    { "source": "/gestion-stock.html", "destination": "/gestion-stock.html" },
-    { "source": "/links.html", "destination": "/links.html" }
+  "routes": [
+    {
+      "src": "^/$",
+      "dest": "https://maisonalteeb-1n30roo0o-maison-al-teeb.vercel.app/"
+    },
+    {
+      "handle": "filesystem"
+    }
   ]
 }
