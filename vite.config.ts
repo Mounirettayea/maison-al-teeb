@@ -14,6 +14,7 @@ export default defineConfig({
         scanner: resolve(__dirname, 'scanner.html'),
         stock: resolve(__dirname, 'stock.html'),
         gestionStock: resolve(__dirname, 'gestion-stock.html'),
+        links: resolve(__dirname, 'links.html'),
         resetPassword: resolve(__dirname, 'reset-password.html'),
       },
     },
