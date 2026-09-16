@@ -1,13 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "cleanUrls": false,
-  "routes": [
-    {
-      "src": "^/$",
-      "dest": "https://maisonalteeb-1n30roo0o-maison-al-teeb.vercel.app/"
-    },
-    {
-      "handle": "filesystem"
-    }
-  ]
+  "cleanUrls": false
 }
