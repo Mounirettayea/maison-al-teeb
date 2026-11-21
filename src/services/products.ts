@@ -1,12 +1,10 @@
 import { supabase } from '../lib/supabase'
 import type { Product } from '../types/product'
 
-const PRODUCT_FIELDS = 'id,name,category,price,stock,active,barcode,image_url:image'
-
 export async function listProducts(options?: { search?: string; activeOnly?: boolean }) {
   let query = supabase
     .from('products')
-    .select(PRODUCT_FIELDS)
+    .select('id,name,category,price,stock,active,barcode,image_url')
     .order('id', { ascending: false })
 
   if (options?.activeOnly) query = query.eq('active', true)
@@ -26,7 +24,7 @@ export async function getProductByBarcode(barcode: string) {
 
   const { data, error } = await supabase
     .from('products')
-    .select(PRODUCT_FIELDS)
+    .select('id,name,category,price,stock,active,barcode,image_url')
     .eq('barcode', value)
     .eq('active', true)
     .maybeSingle()
