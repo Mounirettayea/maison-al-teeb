@@ -1,3 +1,39 @@
 :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#171717;background:#f6f4f0;font-synthesis:none;text-rendering:optimizeLegibility}*{box-sizing:border-box}body{margin:0}.app-shell{min-height:100vh;display:flex}.sidebar{width:240px;background:#17130f;color:#fff;padding:24px 16px;position:fixed;inset:0 auto 0 0}.brand{font-size:20px;font-weight:800;padding:8px 12px 28px}.brand span{font-weight:400}.sidebar nav{display:grid;gap:6px}.sidebar button{border:0;background:transparent;color:#d8d2ca;text-align:left;padding:12px;border-radius:10px;font:inherit;cursor:pointer}.sidebar button:hover{background:#2a231c;color:#fff}.app-main{margin-left:240px;width:calc(100% - 240px);min-height:100vh}.topbar{height:68px;background:#fff;border-bottom:1px solid #e9e3db;padding:0 28px;display:flex;align-items:center;justify-content:space-between}.topbar span{color:#777;font-size:14px}.page-content{padding:28px;max-width:1400px;margin:auto}.page-header{display:flex;justify-content:space-between;align-items:end;margin-bottom:24px}.page-header h1{margin:0 0 6px;font-size:30px}.page-header p{margin:0;color:#777}.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}.stat-card,.panel{background:#fff;border:1px solid #e9e3db;border-radius:16px;padding:20px;box-shadow:0 3px 16px #00000008}.stat-card{display:grid;gap:8px}.stat-card span,.stat-card small{color:#777}.stat-card strong{font-size:26px}.panel{margin-bottom:20px}.panel h2{margin-top:0}.panel-toolbar,.total-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.panel button,.primary{border:0;background:#17130f;color:#fff;border-radius:10px;padding:11px 16px;cursor:pointer}.search{width:100%;padding:13px;border:1px solid #ddd5cc;border-radius:10px;font:inherit}.empty-state{text-align:center;padding:48px 16px;color:#888}.pos-grid{display:grid;grid-template-columns:1.7fr 1fr;gap:20px}.total-row{border-top:1px solid #eee;margin:20px 0;padding-top:18px;font-size:20px}.full{width:100%}.store-home{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(135deg,#17130f,#30261c)}.store-card{max-width:620px;text-align:center;color:#fff;background:#ffffff10;border:1px solid #ffffff22;border-radius:24px;padding:48px;backdrop-filter:blur(10px)}.store-card h1{font-size:44px;margin:8px 0 16px}.store-card p{line-height:1.7;color:#ddd}.eyebrow{letter-spacing:4px;font-size:12px}.store-card .primary{margin-top:20px}@media(max-width:900px){.sidebar{position:static;width:100%;height:auto}.sidebar nav{display:flex;overflow:auto}.app-shell{display:block}.app-main{margin:0;width:100%}.stats-grid{grid-template-columns:repeat(2,1fr)}.pos-grid{grid-template-columns:1fr}.topbar{padding:0 16px}.page-content{padding:18px}}@media(max-width:560px){.stats-grid{grid-template-columns:1fr}.sidebar{padding:12px}.brand{padding-bottom:12px}.page-header h1{font-size:24px}.store-card{padding:32px 22px}.store-card h1{font-size:34px}}
 
 .store-logo{display:block;width:min(220px,72%);max-height:150px;object-fit:contain;margin:0 auto 18px;filter:drop-shadow(0 12px 25px #0008)}
+
+
+/* Public storefront */
+.storefront{min-height:100vh;background:#f8f6f1;color:#211b14;padding:0 5vw 28px}
+.storefront-header{max-width:1320px;margin:auto;min-height:250px;display:flex;align-items:center;gap:28px;border-bottom:1px solid #e7dfd3;position:relative;padding:38px 0}
+.storefront-logo{width:116px;height:116px;object-fit:contain}
+.storefront-header>div{flex:1}
+.storefront-eyebrow{font-size:11px;letter-spacing:3px;color:#9b7845;margin:0 0 8px}
+.storefront-header h1{font-family:Georgia,serif;font-size:42px;margin:0 0 8px;color:#6f512d}
+.storefront-intro{margin:0;color:#71695f;line-height:1.8}
+.store-admin-button{border:1px solid #b99a6a;background:transparent;color:#75562f;border-radius:8px;padding:10px 18px;cursor:pointer;font:inherit}
+.storefront-catalog{max-width:1320px;margin:42px auto}
+.storefront-section-heading{display:flex;justify-content:space-between;align-items:end;margin-bottom:22px}
+.storefront-section-heading h2{font-size:30px;margin:0}
+.storefront-section-heading>span{color:#84796c;font-size:14px}
+.storefront-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px}
+.store-product-card{background:#fff;border:1px solid #eee7dc;border-radius:14px;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.store-product-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px #2c21100e}
+.store-product-image-wrap{height:245px;background:#f1eee8;position:relative;display:grid;place-items:center}
+.store-product-image{width:100%;height:100%;object-fit:contain;padding:14px}
+.store-product-no-image{color:#a18a69;font-family:Georgia,serif;letter-spacing:2px}
+.store-stock{position:absolute;top:12px;right:12px;border-radius:30px;padding:5px 10px;font-size:11px}
+.in-stock{background:#e8f2e8;color:#3c713e}
+.out-stock{background:#f8e9e6;color:#a14d40}
+.store-product-info{padding:16px}
+.store-product-category{font-size:12px;color:#9b7845;margin:0 0 7px}
+.store-product-info h3{font-size:17px;margin:0 0 18px;min-height:42px}
+.store-product-bottom{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.store-product-bottom strong{font-size:18px;color:#76552c}
+.store-product-bottom span{font-size:11px;color:#8a8177}
+.storefront-message,.storefront-error{text-align:center;padding:35px 12px;color:#777}
+.storefront-error{color:#a14d40}
+.storefront-footer{text-align:center;color:#9a9185;border-top:1px solid #e7dfd3;padding:24px;font-size:12px}
+@media(max-width:1000px){.storefront-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.storefront{padding:0 16px 20px}.storefront-header{min-height:auto;padding:28px 0;gap:14px;flex-wrap:wrap}.storefront-logo{width:76px;height:76px}.storefront-header h1{font-size:32px}.storefront-intro{font-size:13px}.store-admin-button{margin-right:auto}.storefront-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.store-product-image-wrap{height:175px}.store-product-info{padding:12px}.store-product-info h3{font-size:14px}.store-product-bottom{align-items:flex-start;flex-direction:column;gap:4px}.storefront-section-heading h2{font-size:25px}}
+@media(max-width:380px){.storefront-grid{grid-template-columns:1fr}.store-product-image-wrap{height:230px}}
